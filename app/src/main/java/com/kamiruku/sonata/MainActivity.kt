@@ -6,16 +6,30 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import androidx.fragment.app.FragmentActivity
 
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     private lateinit var permissionLauncher: ActivityResultLauncher<Array<String>>
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,15 +49,85 @@ class MainActivity : ComponentActivity() {
 
         checkPermission()
 
-        val reycView = findViewById<RecyclerView>(R.id.recycView)
-        reycView.layoutManager = LinearLayoutManager(this)
-
         val audioList = getAudioFilesViaMediaStore()
         Log.d("FILE AMOUNT", audioList.size.toString())
         val rootNode = FileTreeBuilder.buildTree(audioList)
 
-        val adapter = FileRecyclerAdapter(mutableListOf(rootNode))
-        reycView.adapter = adapter
+        val composeView = findViewById<ComposeView>(R.id.compose_view)
+        composeView.setContent {
+            LazyColumn(Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(16.dp) ) {
+                items(mutableListOf(rootNode)) {
+                    ListItem(it)
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun ListItem(node: FileNode, modifier: Modifier = Modifier) {
+        Row(
+            modifier
+                .fillMaxSize()
+                .padding(vertical = 12.dp)
+        ) {
+            androidx.compose.foundation.layout.Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        handleClick(node)
+                    }
+            ) {
+                Text(
+                    //Root will always be folder.
+                    /*
+                    text = if (!node.isFolder) {
+                        node.song?.title ?: "Unknown"
+                    } else {
+                        "📁 ${node.name}"
+                    },
+                    */
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .basicMarquee(animationMode = androidx.compose.foundation.MarqueeAnimationMode.Immediately),
+                    text = "📁 ${node.name}",
+                    fontSize = 16.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Clip,
+                )
+
+                Text(
+                    /*
+                    text = if (!node.isFolder) {
+                        val extension = node.song?.path?.substring(
+                            node.song.path?.lastIndexOf('.')?.plus(1) ?: 0
+                        )
+                        "${extension?.uppercase()} | ${node.song?.duration?.toTime()}"
+                    } else {
+                        "${node.musicTotal} | ${node.durationTotal.toTime()}"
+                    },
+                    */
+                    text = "${node.musicTotal} | ${node.durationTotal.toTime()}",
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 1,
+                )
+            }
+        }
+    }
+
+    fun handleClick(node: FileNode) {
+        if (node.isFolder && node.children.isNotEmpty()) {
+            val fragment = HandleFragment().apply {
+                arguments = Bundle().apply {
+                    putParcelable("node", node)
+                }
+            }
+
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container_view, fragment)
+                .addToBackStack(null)
+                .commit()
+        }
     }
 
     fun checkPermission() {

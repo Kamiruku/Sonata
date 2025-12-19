@@ -1,21 +1,20 @@
 package com.kamiruku.sonata
 
-import android.annotation.SuppressLint
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.widget.TextView
-import androidx.recyclerview.widget.RecyclerView
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.RawValue
+import java.util.Locale
 
 
+@Parcelize
 data class FileNode(
     val name: String,
-    val song: Song?,
+    val song: @RawValue Song? = null,
     val isFolder: Boolean = true,
     val children: MutableList<FileNode> = mutableListOf(),
     var musicTotal: Int = 0,
     var durationTotal: Long = 0
-)
+) : Parcelable
 
 data class Song (
     var iD: Long = 0,
@@ -85,97 +84,15 @@ object FileTreeBuilder {
     }
 }
 
-class FileRecyclerAdapter(
-    private val nodes: MutableList<FileNode> = mutableListOf(),
-    private val expandedNodes: MutableSet<String> = mutableSetOf()
-): RecyclerView.Adapter<FileRecyclerAdapter.TreeViewHolder>() {
-    private val visibleNodes = mutableListOf<Pair<FileNode, Int>>() // node and depth
+fun Long.toTime(): String {
+    //ms -> s
+    val seconds = this / 1000
+    val minutes = seconds/ 60
+    val hours = minutes/ 60
 
-    init {
-        updateVisibleNodes()
-    }
+    val mins = minutes - hours * 60
+    val secs = seconds - (hours * 3600 + mins * 60)
 
-    @SuppressLint("NotifyDataSetChanged")
-    private fun updateVisibleNodes() {
-        visibleNodes.clear()
-        for (node in nodes) {
-            addNodeToVisible(node, 0)
-        }
-        notifyDataSetChanged()
-    }
-
-    private fun addNodeToVisible(node: FileNode, depth: Int) {
-        visibleNodes.add(node to depth)
-        if (node.isFolder && expandedNodes.contains(node.name) && node.children.isNotEmpty()) {
-            for (child in node.children) {
-                addNodeToVisible(child, depth + 1)
-            }
-        }
-    }
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TreeViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(
-            android.R.layout.simple_list_item_1,
-            parent,
-            false
-        )
-        return TreeViewHolder(view)
-    }
-
-    override fun onBindViewHolder(holder: TreeViewHolder, position: Int) {
-        val (node, depth) = visibleNodes[position]
-        holder.bind(node, depth)
-    }
-
-    override fun getItemCount() = visibleNodes.size
-
-    inner class TreeViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val textView: TextView = itemView.findViewById(android.R.id.text1)
-
-        fun bind(node: FileNode, depth: Int) {
-            val padding = depth * 40
-            textView.setPadding(padding, 8, 8, 8)
-
-            textView.text = if (node.isFolder) {
-                ""
-            } else {
-                val extension = node.song?.path?.substring(node.song.path?.lastIndexOf('.')?.plus(1) ?: 0)
-                "${node.song?.title} " +
-                        "\n" +
-                "[${extension?.uppercase()}] | " +
-                        node.song?.duration?.toTime()
-            }
-
-            if (node.isFolder && node.children.isNotEmpty()) {
-                val arrow = if (expandedNodes.contains(node.song?.path)) "▼" else "▶"
-                textView.text =
-                    "$arrow 📁 ${node.name}" +
-                            "\n" +
-                            "${node.musicTotal} | ${node.durationTotal.toTime()}"
-
-                textView.setOnClickListener {
-                    if (expandedNodes.contains(node.name)) {
-                        expandedNodes.remove(node.name)
-                    } else {
-                        expandedNodes.add(node.name)
-                    }
-                    updateVisibleNodes()
-                }
-            } else {
-                textView.setOnClickListener(null)
-            }
-        }
-    }
-
-    private fun Long.toTime(): String {
-        //ms -> s
-        val seconds = this / 1000
-        val minutes = seconds/ 60
-        val hours = minutes/ 60
-
-        val mins = minutes - hours * 60
-        val secs = seconds - (hours * 3600 + mins * 60)
-
-        return String.format("%02d:%02d:%02d", hours, mins, secs)
-    }
+    return if (hours == 0L) String.format(Locale.US, "%02d:%02d", mins, secs)
+    else String.format(Locale.US, "%02d:%02d:%02d", hours, mins, secs)
 }
