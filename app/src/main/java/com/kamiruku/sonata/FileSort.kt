@@ -22,7 +22,8 @@ data class Song (
     var artist: String? = null,
     var path: String? = null,
     var album: String? = null,
-    var duration: Long? = null
+    var duration: Long? = null,
+    var albumId: Long = 0
 )
 
 object FileTreeBuilder {

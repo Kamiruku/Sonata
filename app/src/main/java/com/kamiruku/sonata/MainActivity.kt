@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +22,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -36,6 +38,8 @@ class MainActivity : FragmentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.main_activity)
+
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
 
         permissionLauncher = registerForActivityResult(
             ActivityResultContracts.RequestMultiplePermissions()
@@ -90,10 +94,12 @@ class MainActivity : FragmentActivity() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .basicMarquee(animationMode = androidx.compose.foundation.MarqueeAnimationMode.Immediately),
-                    text = "📁 ${node.name}",
+                    text = node.name,
                     fontSize = 16.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Clip,
+                    //TODO remove hardcoded color
+                    color = Color.White
                 )
 
                 Text(
@@ -110,6 +116,8 @@ class MainActivity : FragmentActivity() {
                     text = "${node.musicTotal} | ${node.durationTotal.toTime()}",
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 1,
+                    //TODO remove hardcoded color
+                    color = Color.White
                 )
             }
         }
@@ -181,6 +189,7 @@ class MainActivity : FragmentActivity() {
             val dataColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.DATA)
             val albumColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.ALBUM)
             val durationColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.DURATION)
+            val albumIdColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.ALBUM_ID)
 
             cursor.apply {
                 if (count == 0) Log.d("Cursor", "get cursor data: Cursor is empty.")
@@ -192,7 +201,8 @@ class MainActivity : FragmentActivity() {
                             artist = audioCursor.getString(artistColumn),
                             path = audioCursor.getString(dataColumn),
                             album = audioCursor.getString(albumColumn),
-                            duration = audioCursor.getLong(durationColumn)
+                            duration = audioCursor.getLong(durationColumn),
+                            albumId = audioCursor.getLong(albumIdColumn)
                         )
                     }
                 }

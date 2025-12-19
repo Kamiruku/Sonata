@@ -1,26 +1,38 @@
 package com.kamiruku.sonata
 
+import android.content.ContentUris
+import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.compose.foundation.MarqueeAnimationMode
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.Fragment
+import coil.compose.AsyncImage
+
 
 class HandleFragment : Fragment(R.layout.fragment_handle) {
     private var currentNode: FileNode? = null
@@ -44,15 +56,19 @@ class HandleFragment : Fragment(R.layout.fragment_handle) {
         val activityComposeView = requireActivity().findViewById<ComposeView>(R.id.compose_view)
         activityComposeView?.visibility = View.GONE
 
-        if (currentNode != null) {
-            val composeView = view.findViewById<ComposeView>(R.id.handle_fragment_compose_view)
+        val composeView = view.findViewById<ComposeView>(R.id.handle_fragment_compose_view)
+
+        currentNode?.let {
             composeView?.setContent {
                 LazyColumn(
                     Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(currentNode!!.children.toMutableList()) {
-                        ListItem(it)
+                    items(
+                        currentNode!!.children,
+                        key = { it.song?.path ?: "" }
+                    ) { node ->
+                        ListItem(node)
                     }
                 }
             }
@@ -63,7 +79,7 @@ class HandleFragment : Fragment(R.layout.fragment_handle) {
         super.onDestroyView()
 
         val activityComposeView = requireActivity().findViewById<ComposeView>(R.id.compose_view)
-        if (requireActivity().supportFragmentManager.backStackEntryCount <= 1) {
+        if (requireActivity().supportFragmentManager.backStackEntryCount == 0) {
             activityComposeView?.visibility = View.VISIBLE
         }
     }
@@ -72,28 +88,46 @@ class HandleFragment : Fragment(R.layout.fragment_handle) {
     fun ListItem(node: FileNode, modifier: Modifier = Modifier) {
         Row(
             modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(vertical = 12.dp)
+                .clickable {
+                    handleClick(node)
+                },
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            val albumId = if (!node.isFolder) {
+                node.song?.albumId
+            } else {
+                findClosestSong(node)?.albumId
+            }
+            AsyncImage(
+                model = getAlbumArt(albumId),
+                contentDescription = "Album art",
+                modifier = Modifier
+                    .size(60.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
+
             androidx.compose.foundation.layout.Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable {
-                        handleClick(node)
-                    }
             ) {
                 Text(
                     text = if (!node.isFolder) {
                         node.song?.title ?: "Unknown"
                     } else {
-                        "📁 ${node.name}"
+                        node.name
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .basicMarquee(animationMode = androidx.compose.foundation.MarqueeAnimationMode.Immediately),
+                        .focusable()
+                        .basicMarquee(animationMode = MarqueeAnimationMode.Immediately),
                     fontSize = 16.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Clip,
+                    //TODO remove hardcoded color
+                    color = Color.White
                 )
 
                 Text(
@@ -107,9 +141,32 @@ class HandleFragment : Fragment(R.layout.fragment_handle) {
                     },
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 1,
+                    //TODO remove hardcoded color
+                    color = Color.White
                 )
             }
         }
+    }
+
+    private fun getAlbumArt(albumId: Long?): Uri? {
+        if (albumId == null || albumId == 0L) return null
+
+        return ContentUris.withAppendedId(
+            MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI,
+            albumId)
+    }
+
+    fun findClosestSong(node: FileNode): Song? {
+        if (!node.isFolder && node.song != null) {
+            return node.song
+        }
+        for (child in node.children) {
+            val result = findClosestSong(child)
+            if (result != null) {
+                return result
+            }
+        }
+        return null
     }
 
     fun handleClick(node: FileNode) {

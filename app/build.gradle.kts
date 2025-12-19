@@ -63,4 +63,5 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     implementation(libs.androidx.fragment.ktx)
+    implementation(libs.coil.compose)
 }
