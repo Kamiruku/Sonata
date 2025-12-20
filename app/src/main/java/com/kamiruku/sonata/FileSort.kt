@@ -1,6 +1,7 @@
 package com.kamiruku.sonata
 
 import android.os.Parcelable
+import androidx.lifecycle.ViewModel
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.RawValue
 import java.util.Locale
@@ -9,11 +10,14 @@ import java.util.Locale
 @Parcelize
 data class FileNode(
     val name: String,
-    val song: @RawValue Song? = null,
-    val isFolder: Boolean = true,
-    val children: MutableList<FileNode> = mutableListOf(),
+    var song: @RawValue Song? = null,
+    val isFolder: Boolean,
+    val children: MutableMap<String, FileNode> = mutableMapOf(),
+
     var musicTotal: Int = 0,
-    var durationTotal: Long = 0
+    var durationTotal: Long = 0,
+    var albumId: Long = 0L, //or closest
+    var sortId: Int = 0
 ) : Parcelable
 
 data class Song (
@@ -28,60 +32,63 @@ data class Song (
 
 object FileTreeBuilder {
     fun buildTree(audioList: List<Song>): FileNode {
-        val root = FileNode("Music",null)
+        val root = FileNode("Music", isFolder = true)
+        var sortId = 0
 
         for (song in audioList) {
             //placeholder
-            val parts = song.path?.
-                replace("storage/E58E-9E76/Music", "")?.
-                split('/')?.filter { it.isNotEmpty() }
+            val parts = song.path
+                ?.replace("storage/E58E-9E76/Music", "")
+                ?.split('/')
+                ?.filter { it.isNotBlank() }
+                ?: continue
+
             var currentNode = root
 
-            for ((index, part) in parts!!.withIndex()) {
+            for ((index, part) in parts.withIndex()) {
                 val isLast = (index == parts.lastIndex)
-                val existingChild = currentNode.children.find { it.name == part }
 
-                if (existingChild != null) {
-                    currentNode = existingChild
-                } else {
-                    val newNode = FileNode(
+                currentNode = currentNode.children.getOrPut(part) {
+                    sortId++
+                    FileNode(
                         name = part,
-                        song = song,
-                        isFolder = !isLast
+                        isFolder = !isLast,
+                        song = if (isLast) song else null,
+                        sortId = sortId
                     )
-                    currentNode.children.add(newNode)
-                    currentNode = newNode
                 }
             }
         }
-        sortChildren(root)
-        childrenTotalCountDuration(root)
+        computeTotalAndSort(root)
         return root
     }
 
-    private fun sortChildren(nodes: FileNode) {
-        nodes.children.sortBy { it.name.lowercase() }
-        for (child in nodes.children) {
-            sortChildren(child)
+    private fun computeTotalAndSort(node: FileNode) {
+        if (!node.isFolder) {
+            node.musicTotal = 1
+            node.durationTotal = node.song?.duration ?: 0
+            node.albumId = node.song?.albumId ?: 0L
+            return
         }
-    }
 
-    private fun childrenTotalCountDuration(nodes: FileNode) {
         var count = 0
         var duration = 0L
+        var albumId: Long? = null
 
-        nodes.children.forEach { child ->
-            if (!child.isFolder) {
-                count++
-                duration += child.song?.duration ?: 0L
-            } else {
-                childrenTotalCountDuration(child)
-                count += child.musicTotal
-                duration += child.durationTotal
-            }
+        node.children.values.forEach { child ->
+            computeTotalAndSort(child)
+            count += child.musicTotal
+            duration += child.durationTotal
+            if (albumId == null && child.albumId != 0L) albumId = child.albumId
         }
-        nodes.musicTotal = count
-        nodes.durationTotal = duration
+
+        node.musicTotal = count
+        node.durationTotal = duration
+        node.albumId = albumId ?: 0L
+
+        val sorted = node.children.toSortedMap(compareBy { it.lowercase() })
+        node.children.clear()
+        node.children.putAll(sorted)
     }
 }
 
@@ -96,4 +103,28 @@ fun Long.toTime(): String {
 
     return if (hours == 0L) String.format(Locale.US, "%02d:%02d", mins, secs)
     else String.format(Locale.US, "%02d:%02d:%02d", hours, mins, secs)
+}
+
+class SharedViewModel: ViewModel() {
+    private var songList: FileNode? = null
+    private val nodeIndex = mutableMapOf<Int, FileNode>()
+
+    fun setList(rootNode: FileNode) {
+        songList = rootNode
+        nodeIndex.clear()
+        buildIndex(rootNode)
+    }
+
+    fun getList(): FileNode? {
+        return songList
+    }
+
+    private fun buildIndex(node: FileNode) {
+        nodeIndex[node.sortId] = node
+        for (child in node.children.values) {
+            buildIndex(child)
+        }
+    }
+
+    fun findNode(sortId: Int): FileNode? = nodeIndex[sortId]
 }

@@ -31,15 +31,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import coil.compose.AsyncImage
 
 
 class HandleFragment : Fragment(R.layout.fragment_handle) {
     private var currentNode: FileNode? = null
+    private val viewModel: SharedViewModel by activityViewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        currentNode = arguments?.getParcelable("node")
+        val currentSortId = arguments?.getInt("nodeSortId") ?: 0
+        currentNode = viewModel.findNode(currentSortId)
     }
 
     override fun onCreateView(
@@ -58,17 +61,17 @@ class HandleFragment : Fragment(R.layout.fragment_handle) {
 
         val composeView = view.findViewById<ComposeView>(R.id.handle_fragment_compose_view)
 
-        currentNode?.let {
+        currentNode?.let { node ->
             composeView?.setContent {
                 LazyColumn(
                     Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(
-                        currentNode!!.children,
-                        key = { it.song?.path ?: "" }
-                    ) { node ->
-                        ListItem(node)
+                        node.children.values.toList(),
+                        key = { it.sortId }
+                    ) { child ->
+                        ListItem(child)
                     }
                 }
             }
@@ -95,13 +98,8 @@ class HandleFragment : Fragment(R.layout.fragment_handle) {
                 },
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            val albumId = if (!node.isFolder) {
-                node.song?.albumId
-            } else {
-                findClosestSong(node)?.albumId
-            }
             AsyncImage(
-                model = getAlbumArt(albumId),
+                model = getAlbumArt(node.albumId),
                 contentDescription = "Album art",
                 modifier = Modifier
                     .size(60.dp)
@@ -133,7 +131,7 @@ class HandleFragment : Fragment(R.layout.fragment_handle) {
                 Text(
                     text = if (!node.isFolder) {
                         val extension = node.song?.path?.substring(
-                            node.song.path?.lastIndexOf('.')?.plus(1) ?: 0
+                            node.song!!.path?.lastIndexOf('.')?.plus(1) ?: 0
                         )
                         "${extension?.uppercase()} | ${node.song?.duration?.toTime()}"
                     } else {
@@ -148,32 +146,16 @@ class HandleFragment : Fragment(R.layout.fragment_handle) {
         }
     }
 
-    private fun getAlbumArt(albumId: Long?): Uri? {
-        if (albumId == null || albumId == 0L) return null
-
-        return ContentUris.withAppendedId(
+    private fun getAlbumArt(albumId: Long): Uri =
+        ContentUris.withAppendedId(
             MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI,
             albumId)
-    }
-
-    fun findClosestSong(node: FileNode): Song? {
-        if (!node.isFolder && node.song != null) {
-            return node.song
-        }
-        for (child in node.children) {
-            val result = findClosestSong(child)
-            if (result != null) {
-                return result
-            }
-        }
-        return null
-    }
 
     fun handleClick(node: FileNode) {
         if (node.isFolder && node.children.isNotEmpty()) {
             val fragment = HandleFragment().apply {
                 arguments = Bundle().apply {
-                    putParcelable("node", node)
+                    putInt("nodeSortId", node.sortId)
                 }
             }
 

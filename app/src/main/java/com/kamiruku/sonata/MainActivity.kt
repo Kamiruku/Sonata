@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -33,6 +34,7 @@ import androidx.fragment.app.FragmentActivity
 
 class MainActivity : FragmentActivity() {
     private lateinit var permissionLauncher: ActivityResultLauncher<Array<String>>
+    private val viewModel: SharedViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -57,6 +59,8 @@ class MainActivity : FragmentActivity() {
         Log.d("FILE AMOUNT", audioList.size.toString())
         val rootNode = FileTreeBuilder.buildTree(audioList)
 
+        viewModel.setList(rootNode)
+
         val composeView = findViewById<ComposeView>(R.id.compose_view)
         composeView.setContent {
             LazyColumn(Modifier.fillMaxSize(),
@@ -72,7 +76,7 @@ class MainActivity : FragmentActivity() {
     fun ListItem(node: FileNode, modifier: Modifier = Modifier) {
         Row(
             modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(vertical = 12.dp)
         ) {
             androidx.compose.foundation.layout.Column(
@@ -127,7 +131,7 @@ class MainActivity : FragmentActivity() {
         if (node.isFolder && node.children.isNotEmpty()) {
             val fragment = HandleFragment().apply {
                 arguments = Bundle().apply {
-                    putParcelable("node", node)
+                    putInt("nodeSortId", node.sortId)
                 }
             }
 
@@ -173,9 +177,19 @@ class MainActivity : FragmentActivity() {
     fun getAudioFilesViaMediaStore(): List<Song> {
         //.nomedia affected
         val musicUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+        val projection = arrayOf(
+            MediaStore.Audio.Media._ID,
+            MediaStore.Audio.Media.TITLE,
+            MediaStore.Audio.Media.ARTIST,
+            MediaStore.Audio.Media.DURATION,
+            MediaStore.Audio.Media.ALBUM_ID,
+            MediaStore.Audio.Media.ALBUM,
+            MediaStore.Audio.Media.DATA
+        )
+
         val audioCursor = contentResolver.query(
             musicUri,
-            null,
+            projection,
             "${MediaStore.Audio.Media.DATA} LIKE ?",
             arrayOf("%E58E-9E76/Music%"),
             null)
