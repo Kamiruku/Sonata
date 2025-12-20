@@ -7,14 +7,18 @@ import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -96,9 +101,13 @@ class HandleFragment : Fragment(R.layout.fragment_handle) {
             contentPadding = PaddingValues(
                 top = 50.dp,
                 bottom = 50.dp,
-                start = 25.dp
+                start = 25.dp,
+                end = 25.dp
             )
         ) {
+            item(key = node.sortId) {
+                ListFolder(node)
+            }
             items(
                 node.children.values.toList(),
                 key = { it.sortId }
@@ -107,6 +116,75 @@ class HandleFragment : Fragment(R.layout.fragment_handle) {
                     node = child,
                     isScrolling = isScrolling
                 )
+            }
+        }
+    }
+
+    @Composable
+    fun ListFolder(node: FileNode) {
+        val context = LocalContext.current
+        val imageRequest = remember(node.albumId, context) {
+            ImageRequest.Builder(context)
+                .data(getAlbumArt(albumId = node.albumId))
+                .size(1200)
+                .crossfade(true)
+                .build()
+        }
+
+        Box(
+            modifier = Modifier
+                .height(200.dp)
+                .fillMaxWidth()
+                .background(Color.Black, RoundedCornerShape(8.dp))
+        ) {
+            if (node.albumId != 0L) {
+                AsyncImage(
+                    model = imageRequest,
+                    contentDescription = "Top folder album art",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.Bottom)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .background(
+                            Color.Black.copy(alpha = 0.6f),
+                            RoundedCornerShape(4.dp)
+                        )
+                ) {
+                    Text(
+                        text = node.name,
+                        color = Color.White,
+                        fontSize = 22.sp,
+                        modifier = Modifier
+                            .padding(6.dp)
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .background(
+                            Color.Black.copy(alpha = 0.6f),
+                            RoundedCornerShape(4.dp)
+                        )
+                ) {
+                    Text(
+                        text = "\uD834\uDD1E ${node.musicTotal} | ${node.durationTotal.toTime()}",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        modifier = Modifier
+                            .padding(6.dp)
+                    )
+                }
             }
         }
     }
@@ -175,10 +253,11 @@ class HandleFragment : Fragment(R.layout.fragment_handle) {
                 val subText = remember(node.sortId) {
                     if (!node.isFolder) {
                         val ext = node.song?.path?.substring(
-                            node.song?.path?.lastIndexOf('.')?.plus(1) ?: 0)
+                            node.song?.path?.lastIndexOf('.')?.plus(1) ?: 0
+                        )
                         "${ext?.uppercase()} | ${node.song?.duration?.toTime()}"
                     } else {
-                        "${node.musicTotal} | ${node.durationTotal.toTime()}"
+                        "\uD834\uDD1E ${node.musicTotal} | ${node.durationTotal.toTime()}"
                     }
                 }
                 Text(
