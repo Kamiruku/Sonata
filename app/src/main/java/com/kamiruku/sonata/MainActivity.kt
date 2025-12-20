@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -63,7 +64,13 @@ class MainActivity : FragmentActivity() {
 
         val composeView = findViewById<ComposeView>(R.id.compose_view)
         composeView.setContent {
-            LazyColumn(Modifier.fillMaxSize(),
+            LazyColumn(
+                Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    top = 50.dp,
+                    bottom = 50.dp,
+                    start = 25.dp
+                ),
                 verticalArrangement = Arrangement.spacedBy(16.dp) ) {
                 items(mutableListOf(rootNode)) {
                     ListItem(it)
@@ -88,13 +95,6 @@ class MainActivity : FragmentActivity() {
             ) {
                 Text(
                     //Root will always be folder.
-                    /*
-                    text = if (!node.isFolder) {
-                        node.song?.title ?: "Unknown"
-                    } else {
-                        "📁 ${node.name}"
-                    },
-                    */
                     modifier = Modifier
                         .fillMaxWidth()
                         .basicMarquee(animationMode = androidx.compose.foundation.MarqueeAnimationMode.Immediately),
@@ -107,16 +107,6 @@ class MainActivity : FragmentActivity() {
                 )
 
                 Text(
-                    /*
-                    text = if (!node.isFolder) {
-                        val extension = node.song?.path?.substring(
-                            node.song.path?.lastIndexOf('.')?.plus(1) ?: 0
-                        )
-                        "${extension?.uppercase()} | ${node.song?.duration?.toTime()}"
-                    } else {
-                        "${node.musicTotal} | ${node.durationTotal.toTime()}"
-                    },
-                    */
                     text = "${node.musicTotal} | ${node.durationTotal.toTime()}",
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 1,
@@ -168,7 +158,7 @@ class MainActivity : FragmentActivity() {
         ) {
             permissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
         }
-         */
+        */
 
         if (permissionsNeeded.isNotEmpty()) {
             permissionLauncher.launch(permissionsNeeded.toTypedArray()  )

@@ -7,11 +7,11 @@ import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.compose.foundation.MarqueeAnimationMode
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,20 +19,26 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 
 
 class HandleFragment : Fragment(R.layout.fragment_handle) {
@@ -63,17 +69,7 @@ class HandleFragment : Fragment(R.layout.fragment_handle) {
 
         currentNode?.let { node ->
             composeView?.setContent {
-                LazyColumn(
-                    Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(
-                        node.children.values.toList(),
-                        key = { it.sortId }
-                    ) { child ->
-                        ListItem(child)
-                    }
-                }
+                FolderScreen(node)
             }
         }
     }
@@ -88,18 +84,64 @@ class HandleFragment : Fragment(R.layout.fragment_handle) {
     }
 
     @Composable
-    fun ListItem(node: FileNode, modifier: Modifier = Modifier) {
+    fun FolderScreen(node: FileNode) {
+        val listState = rememberLazyListState()
+        val isScrolling by remember {
+            derivedStateOf { listState.isScrollInProgress }
+        }
+
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                top = 50.dp,
+                bottom = 50.dp,
+                start = 25.dp
+            )
+        ) {
+            items(
+                node.children.values.toList(),
+                key = { it.sortId }
+            ) { child ->
+                ListItem(
+                    node = child,
+                    isScrolling = isScrolling
+                )
+            }
+        }
+    }
+
+    @Composable
+    fun ListItem(node: FileNode, modifier: Modifier = Modifier, isScrolling: Boolean) {
+        val shouldMarquee = remember(node.name) { node.name.length > 25 }
+        /*
+        Row for individual file/folder
+            Async on far left
+            Column splits right into top and bottom
+                top - name
+                bottom - extension, length, etc
+        */
         Row(
             modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp)
-                .clickable {
-                    handleClick(node)
-                },
+                .combinedClickable(
+                    onLongClick = { handleLongClick() },
+                    onClick = { handleClick(node) }
+                )
+                .padding(vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            val context = LocalContext.current
+            val imageRequest = remember(node.albumId, context) {
+                ImageRequest.Builder(context)
+                    .data(getAlbumArt(albumId = node.albumId))
+                    .size(128)
+                    .crossfade(true)
+                    .build()
+            }
+
             AsyncImage(
-                model = getAlbumArt(node.albumId),
+                model = imageRequest,
                 contentDescription = "Album art",
                 modifier = Modifier
                     .size(60.dp)
@@ -107,7 +149,7 @@ class HandleFragment : Fragment(R.layout.fragment_handle) {
                 contentScale = ContentScale.Crop
             )
 
-            androidx.compose.foundation.layout.Column(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
             ) {
@@ -119,24 +161,28 @@ class HandleFragment : Fragment(R.layout.fragment_handle) {
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .focusable()
-                        .basicMarquee(animationMode = MarqueeAnimationMode.Immediately),
+                        .then(
+                            if (shouldMarquee && !isScrolling)
+                                Modifier.basicMarquee()
+                            else Modifier
+                        ),
                     fontSize = 16.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Clip,
                     //TODO remove hardcoded color
                     color = Color.White
                 )
-
-                Text(
-                    text = if (!node.isFolder) {
-                        val extension = node.song?.path?.substring(
-                            node.song!!.path?.lastIndexOf('.')?.plus(1) ?: 0
-                        )
-                        "${extension?.uppercase()} | ${node.song?.duration?.toTime()}"
+                val subText = remember(node.sortId) {
+                    if (!node.isFolder) {
+                        val ext = node.song?.path?.substring(
+                            node.song?.path?.lastIndexOf('.')?.plus(1) ?: 0)
+                        "${ext?.uppercase()} | ${node.song?.duration?.toTime()}"
                     } else {
                         "${node.musicTotal} | ${node.durationTotal.toTime()}"
-                    },
+                    }
+                }
+                Text(
+                    text = subText,
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 1,
                     //TODO remove hardcoded color
@@ -164,5 +210,9 @@ class HandleFragment : Fragment(R.layout.fragment_handle) {
                 .addToBackStack(null)
                 .commit()
         }
+    }
+
+    fun handleLongClick() {
+        println("LONG CLICK")
     }
 }
