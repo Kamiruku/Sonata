@@ -4,7 +4,6 @@ import android.os.Parcelable
 import androidx.lifecycle.ViewModel
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.RawValue
-import java.util.Locale
 
 
 @Parcelize
@@ -32,13 +31,15 @@ data class Song (
 
 object FileTreeBuilder {
     fun buildTree(audioList: List<Song>): FileNode {
-        val root = FileNode("Music", isFolder = true)
+        val commonPrefix = findCommonPrefix(audioList)
+        val lastFolderName = commonPrefix.trimEnd('/').substringAfterLast('/')
+
+        val root = FileNode(lastFolderName, isFolder = true)
         var sortId = 0
 
         for (song in audioList) {
-            //TODO replace placeholder path
             val parts = song.path
-                ?.replace("storage/E58E-9E76/Music", "")
+                ?.replace(commonPrefix, "")
                 ?.split('/')
                 ?.filter { it.isNotBlank() }
                 ?: continue
@@ -90,19 +91,26 @@ object FileTreeBuilder {
         node.children.clear()
         node.children.putAll(sorted)
     }
-}
 
-fun Long.toTime(): String {
-    //ms -> s
-    val seconds = this / 1000
-    val minutes = seconds/ 60
-    val hours = minutes/ 60
+    private fun findCommonPrefix(audioList: List<Song>): String {
+        val paths = audioList.mapNotNull { it.path }
 
-    val mins = minutes - hours * 60
-    val secs = seconds - (hours * 3600 + mins * 60)
+        if (paths.isEmpty()) return ""
 
-    return if (hours == 0L) String.format(Locale.US, "%02d:%02d", mins, secs)
-    else String.format(Locale.US, "%02d:%02d:%02d", hours, mins, secs)
+        val first = paths[0]
+        var end: Int
+
+        for (i in first.indices) {
+            val c = first[i]
+            for (s in paths) {
+                if (i >= s.length || s[i] != c) {
+                    end = i
+                    return first.take(end)
+                }
+            }
+        }
+        return first
+    }
 }
 
 class SharedViewModel: ViewModel() {

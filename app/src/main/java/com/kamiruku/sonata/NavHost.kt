@@ -41,6 +41,7 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import java.util.Locale
 
 sealed class SonataRoute(val route: String) {
 
@@ -429,3 +430,17 @@ private fun getAlbumArt(albumId: Long): Uri =
     ContentUris.withAppendedId(
         MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI,
         albumId)
+
+
+private fun Long.toTime(): String {
+    //ms -> s
+    val seconds = this / 1000
+    val minutes = seconds/ 60
+    val hours = minutes/ 60
+
+    val mins = minutes - hours * 60
+    val secs = seconds - (hours * 3600 + mins * 60)
+
+    return if (hours == 0L) String.format(Locale.US, "%02d:%02d", mins, secs)
+    else String.format(Locale.US, "%02d:%02d:%02d", hours, mins, secs)
+}
