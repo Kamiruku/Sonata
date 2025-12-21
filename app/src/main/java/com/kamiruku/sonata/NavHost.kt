@@ -37,43 +37,156 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 
+sealed class SonataRoute(val route: String) {
+
+    data object Library : SonataRoute("library")
+
+    data object LibraryHome : SonataRoute("library/home")
+
+    data object FolderRoot : SonataRoute("library/folder_root")
+    data object Folder : SonataRoute("library/folder/{id}") {
+        fun create(id: Int) = "library/folder/$id"
+    }
+    data object AllSongs : SonataRoute("library/all_songs")
+
+    data object NowPlaying : SonataRoute("now_playing")
+    data object Settings : SonataRoute("settings")
+    data object Search: SonataRoute("search")
+}
+
 @Composable
 fun SonataNavHost(navController: NavHostController, viewModel: SharedViewModel) {
-    val root = viewModel.getList() ?: return
+    val root = viewModel.getRootNode() ?: return
+    val songList = viewModel.getSongList()
 
     NavHost(
         navController = navController,
-        startDestination = "root"
+        startDestination = SonataRoute.Library.route
     ) {
-        composable("root") {
-            RootScreen(
-                node = root,
-                onOpen = { node ->
-                    navController.navigate("folder/${node.sortId}")
-                }
+        navigation(
+            route = SonataRoute.Library.route,
+            startDestination = SonataRoute.LibraryHome.route
+        ) {
+            composable(SonataRoute.LibraryHome.route) {
+                LibraryScreen(
+                    onAllSongsClick = { navController.navigate(SonataRoute.AllSongs.route) },
+                    onFolderClick = { navController.navigate(SonataRoute.FolderRoot.route) }
+                )
+            }
+
+            composable(SonataRoute.AllSongs.route) {
+                AllSongsScreen(songList)
+            }
+
+            composable(SonataRoute.FolderRoot.route) {
+                FileRootScreen(
+                    node = root,
+                    onOpen = { node ->
+                        navController.navigate(SonataRoute.Folder.create(node.sortId))
+                    }
+                )
+            }
+
+            composable(
+                route = SonataRoute.Folder.route,
+                arguments = listOf(navArgument("id") {
+                    type = NavType.IntType }
+                )
+            ) { backStackEntry ->
+                val id = backStackEntry.arguments?.getInt("id") ?: return@composable
+                val node = viewModel.findNode(id) ?: return@composable
+
+                FolderScreen(
+                    node = node,
+                    onOpen = { child ->
+                        navController.navigate(SonataRoute.Folder.create(child.sortId))
+                    },
+                    onBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun LibraryScreen(
+    onAllSongsClick: () -> Unit,
+    onFolderClick: () -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(25.dp)
+    ) {
+        item {
+           Text(
+               text = "Library",
+               modifier = Modifier
+                   .fillMaxWidth()
+                   .padding(vertical = 30.dp),
+               fontSize = 22.sp,
+               color = Color.White
+           )
+        }
+
+        item {
+            Text(
+                text = "All Songs",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onAllSongsClick() }
+                    .padding(vertical = 22.dp),
+                fontSize = 18.sp,
+                color = Color.White
             )
         }
 
-        composable(
-            route = "folder/{id}",
-            arguments = listOf(
-                navArgument("id") { type = NavType.IntType }
+        item {
+            Text(
+                text = "Folders Hierarchy",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onFolderClick() }
+                    .padding(vertical = 22.dp),
+                fontSize = 18.sp,
+                color = Color.White
             )
-        ) { backStackEntry ->
-            val id = backStackEntry.arguments?.getInt("id") ?: return@composable
-            val node = viewModel.findNode(id) ?: return@composable
+        }
+    }
+}
 
-            FolderScreen(
+@Composable
+fun AllSongsScreen(songList: List<FileNode>) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues (25.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item {
+            Text(
+                text = "All Songs",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 30.dp),
+                fontSize = 22.sp,
+                color = Color.White
+            )
+        }
+
+        items(
+            items = songList,
+            key = { it.sortId }
+        ) { node ->
+            FileListItem(
                 node = node,
-                onOpen = { child ->
-                    navController.navigate("folder/${child.sortId}")
-                },
-                onBack = {
-                    navController.popBackStack()
+                onClick = {
+                    //TODO play song
                 }
             )
         }
@@ -81,7 +194,7 @@ fun SonataNavHost(navController: NavHostController, viewModel: SharedViewModel) 
 }
 
 @Composable
-fun RootScreen(
+fun FileRootScreen(
     node: FileNode,
     onOpen: (FileNode) -> Unit
 ) {
@@ -95,6 +208,17 @@ fun RootScreen(
         ),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        item {
+            Text(
+                text = "Folder Hierarchy",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 30.dp),
+                fontSize = 22.sp,
+                color = Color.White
+            )
+        }
+
         item {
             FileListItem(node) {
                 if (node.isFolder) onOpen(node)

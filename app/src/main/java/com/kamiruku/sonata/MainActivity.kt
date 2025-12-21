@@ -100,6 +100,7 @@ class MainActivity : FragmentActivity() {
             MediaStore.Audio.Media.DATA
         )
 
+        //TODO replace placeholder path
         val audioCursor = contentResolver.query(
             musicUri,
             projection,
