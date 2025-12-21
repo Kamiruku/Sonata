@@ -6,31 +6,16 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.navigation.compose.rememberNavController
+import com.kamiruku.sonata.ui.theme.SonataTheme
 
 
 class MainActivity : FragmentActivity() {
@@ -40,7 +25,6 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.main_activity)
 
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
 
@@ -62,73 +46,12 @@ class MainActivity : FragmentActivity() {
 
         viewModel.setList(rootNode)
 
-        val composeView = findViewById<ComposeView>(R.id.compose_view)
-        composeView.setContent {
-            LazyColumn(
-                Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    top = 50.dp,
-                    bottom = 50.dp,
-                    start = 25.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(16.dp) ) {
-                items(mutableListOf(rootNode)) {
-                    ListItem(it)
-                }
+        setContent {
+            SonataTheme {
+                SonataNavHost(
+                    navController = rememberNavController(),
+                    viewModel = viewModel)
             }
-        }
-    }
-
-    @Composable
-    fun ListItem(node: FileNode, modifier: Modifier = Modifier) {
-        Row(
-            modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp)
-        ) {
-            androidx.compose.foundation.layout.Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        handleClick(node)
-                    }
-            ) {
-                Text(
-                    //Root will always be folder.
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .basicMarquee(animationMode = androidx.compose.foundation.MarqueeAnimationMode.Immediately),
-                    text = node.name,
-                    fontSize = 16.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Clip,
-                    //TODO remove hardcoded color
-                    color = Color.White
-                )
-
-                Text(
-                    text = "${node.musicTotal} | ${node.durationTotal.toTime()}",
-                    modifier = Modifier.fillMaxWidth(),
-                    maxLines = 1,
-                    //TODO remove hardcoded color
-                    color = Color.White
-                )
-            }
-        }
-    }
-
-    fun handleClick(node: FileNode) {
-        if (node.isFolder && node.children.isNotEmpty()) {
-            val fragment = HandleFragment().apply {
-                arguments = Bundle().apply {
-                    putInt("nodeSortId", node.sortId)
-                }
-            }
-
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container_view, fragment)
-                .addToBackStack(null)
-                .commit()
         }
     }
 
