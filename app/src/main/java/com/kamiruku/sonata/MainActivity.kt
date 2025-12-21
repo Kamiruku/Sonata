@@ -2,6 +2,7 @@ package com.kamiruku.sonata
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
@@ -13,13 +14,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.compose.rememberNavController
 import com.kamiruku.sonata.ui.theme.SonataTheme
 
 
 class MainActivity : FragmentActivity() {
-    private lateinit var permissionLauncher: ActivityResultLauncher<Array<String>>
+    private lateinit var permissionLauncher: ActivityResultLauncher<String>
     private val viewModel: SharedViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,64 +31,47 @@ class MainActivity : FragmentActivity() {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
 
         permissionLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()
-        ) { permissions ->
-            permissions.forEach { (permission, isGranted) ->
-                if (!isGranted) {
-                    Toast.makeText(this, "Permission denied: $permission", Toast.LENGTH_SHORT).show()
-                }
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            if (isGranted) {
+                loadMusic()
+            } else {
+                Toast.makeText(this, "Permission denied: READ_MEDIA_AUDIO", Toast.LENGTH_SHORT).show()
+
             }
         }
 
         checkPermission()
 
-        val audioList = getAudioFilesViaMediaStore()
-        Log.d("FILE AMOUNT", audioList.size.toString())
-        val rootNode = FileTreeBuilder.buildTree(audioList)
-
-        viewModel.setList(rootNode)
-
         setContent {
             SonataTheme {
                 SonataNavHost(
                     navController = rememberNavController(),
-                    viewModel = viewModel)
+                    viewModel = viewModel
+                )
             }
         }
     }
 
     fun checkPermission() {
-        val permissionsNeeded = mutableListOf<String>()
-
         if (ActivityCompat.checkSelfPermission(
                 this@MainActivity,
                 Manifest.permission.READ_MEDIA_AUDIO
-            ) != PackageManager.PERMISSION_GRANTED
+            ) == PackageManager.PERMISSION_GRANTED
         ) {
-            permissionsNeeded.add(Manifest.permission.READ_MEDIA_AUDIO)
-        }
-        /*
-        if (ActivityCompat.checkSelfPermission(
-                this@MainActivity,
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-             permissionsNeeded.add(Manifest.permission.READ_EXTERNAL_STORAGE)
-        }
-
-        if (ActivityCompat.checkSelfPermission(
-                this@MainActivity,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            permissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-        }
-        */
-
-        if (permissionsNeeded.isNotEmpty()) {
-            permissionLauncher.launch(permissionsNeeded.toTypedArray()  )
+            loadMusic()
+        } else {
+            permissionLauncher.launch(Manifest.permission.READ_MEDIA_AUDIO)
         }
     }
+
+    private fun loadMusic() {
+        val audioList = getAudioFilesViaMediaStore()
+        Log.d("FILE AMOUNT", audioList.size.toString())
+        val rootNode = FileTreeBuilder.buildTree(audioList)
+        viewModel.setList(rootNode)
+    }
+
     fun getAudioFilesViaMediaStore(): List<Song> {
         //.nomedia affected
         val musicUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
@@ -100,43 +85,51 @@ class MainActivity : FragmentActivity() {
             MediaStore.Audio.Media.DATA
         )
 
-        //TODO replace placeholder path
-        val audioCursor = contentResolver.query(
-            musicUri,
-            projection,
-            "${MediaStore.Audio.Media.DATA} LIKE ?",
-            arrayOf("%E58E-9E76/Music%"),
-            null)
-
         val audioList = mutableListOf<Song>()
 
-        audioCursor?.use { cursor ->
-            val idColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns._ID)
-            val titleColumn = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.TITLE)
-            val artistColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.ARTIST)
-            val dataColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.DATA)
-            val albumColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.ALBUM)
-            val durationColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.DURATION)
-            val albumIdColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.ALBUM_ID)
+        try {
+            //TODO replace placeholder path
+            val audioCursor = contentResolver.query(
+                musicUri,
+                projection,
+                "${MediaStore.Audio.Media.DATA} LIKE ?",
+                arrayOf("%E58E-9E76/Music%"),
+                null
+            ) ?: return emptyList()
 
-            cursor.apply {
-                if (count == 0) Log.d("Cursor", "get cursor data: Cursor is empty.")
-                else {
-                    while (audioCursor.moveToNext()) {
-                        audioList += Song(
-                            iD = audioCursor.getLong(idColumn),
-                            title = audioCursor.getString(titleColumn),
-                            artist = audioCursor.getString(artistColumn),
-                            path = audioCursor.getString(dataColumn),
-                            album = audioCursor.getString(albumColumn),
-                            duration = audioCursor.getLong(durationColumn),
-                            albumId = audioCursor.getLong(albumIdColumn)
-                        )
+            audioCursor.use { cursor ->
+                val idColumn: Int = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns._ID)
+                val titleColumn = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.TITLE)
+                val artistColumn: Int = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.ARTIST)
+                val dataColumn: Int = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DATA)
+                val albumColumn: Int = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.ALBUM)
+                val durationColumn: Int = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DURATION)
+                val albumIdColumn: Int = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.ALBUM_ID)
+
+                cursor.apply {
+                    if (count == 0) Log.d("Cursor", "get cursor data: Cursor is empty.")
+                    else {
+                        while (cursor.moveToNext()) {
+                            audioList += Song(
+                                iD = cursor.getLong(idColumn),
+                                title = cursor.getString(titleColumn),
+                                artist = cursor.getString(artistColumn),
+                                path = cursor.getString(dataColumn),
+                                album = cursor.getString(albumColumn),
+                                duration = cursor.getLong(durationColumn),
+                                albumId = cursor.getLong(albumIdColumn)
+                            )
+                        }
                     }
                 }
             }
+            audioCursor.close()
+
+        } catch(e: SecurityException) {
+            Log.e("MainActivity", "SE",e)
+        } catch(e: Exception) {
+            Log.e("MainActivity", "MSE", e)
         }
-        audioCursor!!.close()
 
         return audioList
     }
