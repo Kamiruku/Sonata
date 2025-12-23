@@ -22,7 +22,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -122,84 +121,74 @@ fun LibraryScreen(
     onAllSongsClick: () -> Unit,
     onFolderClick: () -> Unit
 ) {
-    Surface(
+    LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.surface
+        contentPadding = PaddingValues(25.dp)
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(25.dp)
-        ) {
-            item {
-                Text(
-                    text = "Library",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 30.dp),
-                    fontSize = 22.sp,
+        item {
+            Text(
+                text = "Library",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 30.dp),
+                fontSize = 22.sp,
 
-                    )
-            }
+                )
+        }
 
-            item {
-                Text(
-                    text = "All Songs",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onAllSongsClick() }
-                        .padding(vertical = 22.dp),
-                    fontSize = 18.sp,
+        item {
+            Text(
+                text = "All Songs",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onAllSongsClick() }
+                    .padding(vertical = 22.dp),
+                fontSize = 18.sp,
 
-                    )
-            }
+                )
+        }
 
-            item {
-                Text(
-                    text = "Folders Hierarchy",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onFolderClick() }
-                        .padding(vertical = 22.dp),
-                    fontSize = 18.sp,
+        item {
+            Text(
+                text = "Folders Hierarchy",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onFolderClick() }
+                    .padding(vertical = 22.dp),
+                fontSize = 18.sp,
 
-                    )
-            }
+                )
         }
     }
 }
 
 @Composable
 fun AllSongsScreen(songList: List<FileNode>) {
-    Surface(
+    LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.surface
+        contentPadding = PaddingValues (25.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues (25.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            item {
-                Text(
-                    text = "All Songs",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 30.dp),
-                    fontSize = 22.sp
-                    )
-            }
+        item {
+            Text(
+                text = "All Songs",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 30.dp),
+                fontSize = 22.sp
+            )
+        }
 
-            items(
-                items = songList,
-                key = { it.sortId }
-            ) { node ->
-                FileListItem(
-                    node = node,
-                    onClick = {
-                        //TODO play song
-                    }
-                )
-            }
+        items(
+            items = songList,
+            key = { it.sortId }
+        ) { node ->
+            FileListItem(
+                node = node,
+                onClick = {
+                    //TODO play song
+                }
+            )
         }
     }
 }
@@ -209,35 +198,30 @@ fun FileRootScreen(
     node: FileNode,
     onOpen: (FileNode) -> Unit
 ) {
-    Surface(
+    LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.surface
+        contentPadding = PaddingValues(
+            top = 50.dp,
+            bottom = 50.dp,
+            start = 25.dp,
+            end = 25.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                top = 50.dp,
-                bottom = 50.dp,
-                start = 25.dp,
-                end = 25.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item {
-                Text(
-                    text = "Folder Hierarchy",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 30.dp),
-                    fontSize = 22.sp,
+        item {
+            Text(
+                text = "Folder Hierarchy",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 30.dp),
+                fontSize = 22.sp,
 
-                    )
-            }
+                )
+        }
 
-            item {
-                FileListItem(node) {
-                    if (node.isFolder) onOpen(node)
-                }
+        item {
+            FileListItem(node) {
+                if (node.isFolder) onOpen(node)
             }
         }
     }
@@ -249,31 +233,26 @@ fun FolderScreen(
     onOpen: (FileNode) -> Unit,
     onBack: () -> Unit
 ) {
-    Surface(
+    LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.surface
+        contentPadding = PaddingValues(
+            top = 50.dp,
+            bottom = 50.dp,
+            start = 25.dp,
+            end = 25.dp
+        ),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                top = 50.dp,
-                bottom = 50.dp,
-                start = 25.dp,
-                end = 25.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            item(key = node.sortId) {
-                FolderHeader(node, onBack)
-            }
+        item(key = node.sortId) {
+            FolderHeader(node, onBack)
+        }
 
-            items(
-                node.children.values.toList(),
-                key = { it.sortId }
-            ) { child ->
-                FileListItem(child) {
-                    if (child.isFolder) onOpen(child)
-                }
+        items(
+            node.children.values.toList(),
+            key = { it.sortId }
+        ) { child ->
+            FileListItem(child) {
+                if (child.isFolder) onOpen(child)
             }
         }
     }

@@ -12,6 +12,10 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.compose.rememberNavController
@@ -41,10 +45,16 @@ class MainActivity : FragmentActivity() {
 
         setContent {
             SonataTheme {
-                SonataNavHost(
-                    navController = rememberNavController(),
-                    viewModel = viewModel
-                )
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    SonataNavHost(
+                        navController = rememberNavController(),
+                        viewModel = viewModel
+                    )
+                }
+
             }
         }
     }
