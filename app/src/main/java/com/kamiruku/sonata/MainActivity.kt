@@ -11,7 +11,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -88,7 +87,8 @@ class MainActivity : FragmentActivity() {
             MediaStore.Audio.Media.DURATION,
             MediaStore.Audio.Media.ALBUM_ID,
             MediaStore.Audio.Media.ALBUM,
-            MediaStore.Audio.Media.DATA
+            MediaStore.Audio.Media.RELATIVE_PATH,
+            MediaStore.Audio.Media.DISPLAY_NAME
         )
 
         val audioList = mutableListOf<Song>()
@@ -98,8 +98,8 @@ class MainActivity : FragmentActivity() {
             val audioCursor = contentResolver.query(
                 musicUri,
                 projection,
-                "${MediaStore.Audio.Media.DATA} LIKE ?",
-                arrayOf("%E58E-9E76/Music%"),
+                "${MediaStore.Audio.Media.RELATIVE_PATH} LIKE ?",
+                arrayOf("%Music%"),
                 null
             ) ?: return emptyList()
 
@@ -107,10 +107,11 @@ class MainActivity : FragmentActivity() {
                 val idColumn: Int = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns._ID)
                 val titleColumn = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.TITLE)
                 val artistColumn: Int = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.ARTIST)
-                val dataColumn: Int = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DATA)
+                val relativePathColumn: Int = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.RELATIVE_PATH)
                 val albumColumn: Int = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.ALBUM)
                 val durationColumn: Int = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DURATION)
                 val albumIdColumn: Int = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.ALBUM_ID)
+                val displayNameColumn: Int = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DISPLAY_NAME)
 
                 cursor.apply {
                     if (count == 0) Log.d("Cursor", "get cursor data: Cursor is empty.")
@@ -120,7 +121,7 @@ class MainActivity : FragmentActivity() {
                                 iD = cursor.getLong(idColumn),
                                 title = cursor.getString(titleColumn),
                                 artist = cursor.getString(artistColumn),
-                                path = cursor.getString(dataColumn),
+                                path = cursor.getString(relativePathColumn) + cursor.getString(displayNameColumn),
                                 album = cursor.getString(albumColumn),
                                 duration = cursor.getLong(durationColumn),
                                 albumId = cursor.getLong(albumIdColumn)
