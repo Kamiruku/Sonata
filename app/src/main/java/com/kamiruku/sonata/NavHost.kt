@@ -1,8 +1,12 @@
 package com.kamiruku.sonata
 
+import android.annotation.SuppressLint
 import android.content.ContentUris
 import android.net.Uri
 import android.provider.MediaStore
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -19,12 +23,23 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,6 +52,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
 import coil.compose.AsyncImage
@@ -60,10 +76,38 @@ sealed class SonataRoute(val route: String) {
     data object Search: SonataRoute("search")
 }
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
-fun SonataNavHost(navController: NavHostController, viewModel: SharedViewModel) {
+fun SonataApp(navController: NavHostController, viewModel: SharedViewModel) {
+    var bottomBarVisible by remember { mutableStateOf(true) }
+
+    Scaffold(
+        bottomBar = {
+            AnimatedBottomBar(
+                visible = bottomBarVisible,
+                navController = navController
+            )
+        }
+    ) { paddingValues ->
+        SonataNavHost(
+            navController = navController,
+            viewModel = viewModel,
+            onScrollDirectionChanged = { scrollingUp ->
+                bottomBarVisible = scrollingUp
+            }
+        )
+    }
+}
+
+@Composable
+fun SonataNavHost(
+    navController: NavHostController,
+    viewModel: SharedViewModel,
+    onScrollDirectionChanged: (Boolean) -> Unit
+) {
     val root = viewModel.getRootNode() ?: return
     val songList = viewModel.getSongList()
+    if (songList.isEmpty()) return
 
     NavHost(
         navController = navController,
@@ -74,6 +118,8 @@ fun SonataNavHost(navController: NavHostController, viewModel: SharedViewModel) 
             startDestination = SonataRoute.LibraryHome.route
         ) {
             composable(SonataRoute.LibraryHome.route) {
+                //always show bottom nav bar
+                LaunchedEffect(Unit) { onScrollDirectionChanged(true) }
                 LibraryScreen(
                     onAllSongsClick = { navController.navigate(SonataRoute.AllSongs.route) },
                     onFolderClick = { navController.navigate(SonataRoute.FolderRoot.route) }
@@ -81,10 +127,15 @@ fun SonataNavHost(navController: NavHostController, viewModel: SharedViewModel) 
             }
 
             composable(SonataRoute.AllSongs.route) {
-                AllSongsScreen(songList)
+                AllSongsScreen(
+                    songList = songList,
+                    onScrollDirectionChanged = onScrollDirectionChanged
+                )
             }
 
             composable(SonataRoute.FolderRoot.route) {
+                //always show bottom nav bar since ideally only 2 folders max here -> no scrolling
+                LaunchedEffect(Unit) { onScrollDirectionChanged(true) }
                 FileRootScreen(
                     node = root,
                     onOpen = { node ->
@@ -109,10 +160,93 @@ fun SonataNavHost(navController: NavHostController, viewModel: SharedViewModel) 
                     },
                     onBack = {
                         navController.popBackStack()
-                    }
+                    },
+                    onScrollDirectionChanged = onScrollDirectionChanged
                 )
             }
         }
+    }
+}
+
+
+@Composable
+fun AnimatedBottomBar(
+    visible: Boolean,
+    navController: NavHostController
+) {
+    //will include mini-player later, that's why this is here
+    AnimatedVisibility(
+        visible = visible,
+        enter = slideInVertically { it },
+        exit = slideOutVertically { fullHeight -> fullHeight }
+    ) {
+        Column {
+            BottomNavBar(navController)
+        }
+    }
+}
+
+@Composable
+fun BottomNavBar(navController: NavHostController) {
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+
+    NavigationBar {
+        NavigationBarItem(
+            selected = currentRoute?.startsWith(SonataRoute.Library.route) == true,
+            onClick = {
+                navController.navigate(SonataRoute.Library.route) {
+                    //destroy everything above library but not itself
+                    popUpTo(SonataRoute.Library.route) { inclusive = false }
+                    launchSingleTop = true
+                } },
+            icon = { Text("Lib")
+            }
+        )
+
+        NavigationBarItem(
+            selected = currentRoute == SonataRoute.Search.route,
+            onClick = { navController.navigate(SonataRoute.Search.route) },
+            icon = { Text("Search") }
+        )
+
+        NavigationBarItem(
+            selected = currentRoute == SonataRoute.Settings.route,
+            onClick = { navController.navigate(SonataRoute.Settings.route) },
+            icon = { Text("Set") }
+        )
+    }
+}
+
+@Composable
+fun RememberScrollAwareBottomBar(
+    listState: LazyListState,
+    onScrollDirectionChanged: (Boolean) -> Unit
+) {
+    var lastScrollOffset by remember { mutableIntStateOf(0) }
+
+    val barVisible by remember {
+        derivedStateOf {
+            //always visible at top (useful on small folder screens)
+            val atTop =
+                listState.firstVisibleItemScrollOffset == 0 &&
+                        listState.firstVisibleItemIndex == 0
+
+            if (atTop) {
+                true
+            } else {
+                val currentOffset =
+                    listState.firstVisibleItemIndex * 10_000 +
+                            listState.firstVisibleItemScrollOffset
+
+                val up = currentOffset < lastScrollOffset - 10
+                lastScrollOffset = currentOffset
+                up
+            }
+        }
+    }
+
+    LaunchedEffect(barVisible) {
+        onScrollDirectionChanged(barVisible)
     }
 }
 
@@ -163,8 +297,15 @@ fun LibraryScreen(
 }
 
 @Composable
-fun AllSongsScreen(songList: List<FileNode>) {
+fun AllSongsScreen(
+    songList: List<FileNode>,
+    onScrollDirectionChanged: (Boolean) -> Unit
+) {
+    val listState = rememberLazyListState()
+    RememberScrollAwareBottomBar(listState, onScrollDirectionChanged)
+
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues (25.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -231,9 +372,14 @@ fun FileRootScreen(
 fun FolderScreen(
     node: FileNode,
     onOpen: (FileNode) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onScrollDirectionChanged: (Boolean) -> Unit
 ) {
+    val listState = rememberLazyListState()
+    RememberScrollAwareBottomBar(listState, onScrollDirectionChanged)
+
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
             top = 50.dp,

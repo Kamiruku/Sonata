@@ -48,7 +48,7 @@ class MainActivity : FragmentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.surface
                 ) {
-                    SonataNavHost(
+                    SonataApp(
                         navController = rememberNavController(),
                         viewModel = viewModel
                     )
