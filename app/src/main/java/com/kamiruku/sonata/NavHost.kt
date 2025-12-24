@@ -34,7 +34,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -81,6 +80,11 @@ sealed class SonataRoute(val route: String) {
 @Composable
 fun SonataApp(navController: NavHostController, viewModel: SharedViewModel) {
     var bottomBarVisible by remember { mutableStateOf(true) }
+    val backStackEntry by navController.currentBackStackEntryAsState()
+
+    LaunchedEffect(backStackEntry?.destination?.route) {
+        bottomBarVisible = true
+    }
 
     Scaffold(
         bottomBar = {
@@ -222,20 +226,21 @@ fun RememberScrollAwareBottomBar(
 ) {
     var lastScrollOffset by remember { mutableIntStateOf(0) }
     var lastVisibility by remember { mutableStateOf(true) }
+    var initialised by remember { mutableStateOf(false) }
 
     LaunchedEffect(listState) {
         snapshotFlow {
             listState.firstVisibleItemIndex to
                     listState.firstVisibleItemScrollOffset
         }.collect { (index, offset) ->
-            val atTop = index == 0 && offset == 0
+            val atTop = (index == 0 && offset == 0)
 
             val currentOffset = index * 10_000 + offset
             val scrollingUp = currentOffset < lastScrollOffset
-
             val shouldShow = atTop || scrollingUp
 
-            if (shouldShow != lastVisibility) {
+            if (!initialised || shouldShow != lastVisibility) {
+                initialised = true
                 lastVisibility = shouldShow
                 onScrollDirectionChanged(shouldShow)
             }
@@ -260,9 +265,7 @@ fun LibraryScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 30.dp),
-                fontSize = 22.sp,
-
-                )
+                fontSize = 22.sp)
         }
 
         item {
@@ -272,9 +275,7 @@ fun LibraryScreen(
                     .fillMaxWidth()
                     .clickable { onAllSongsClick() }
                     .padding(vertical = 22.dp),
-                fontSize = 18.sp,
-
-                )
+                fontSize = 18.sp)
         }
 
         item {
@@ -284,9 +285,7 @@ fun LibraryScreen(
                     .fillMaxWidth()
                     .clickable { onFolderClick() }
                     .padding(vertical = 22.dp),
-                fontSize = 18.sp,
-
-                )
+                fontSize = 18.sp)
         }
     }
 }
