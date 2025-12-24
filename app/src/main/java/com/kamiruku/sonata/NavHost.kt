@@ -93,7 +93,7 @@ fun SonataApp(navController: NavHostController, viewModel: SharedViewModel) {
                 navController = navController
             )
         },
-        content = {
+        content = { paddingValues ->
             SonataNavHost(
                 navController = navController,
                 viewModel = viewModel,
@@ -133,7 +133,13 @@ fun SonataNavHost(
             composable(SonataRoute.AllSongs.route) {
                 AllSongsScreen(
                     songList = songList,
-                    onScrollDirectionChanged = onScrollDirectionChanged
+                    onScrollDirectionChanged = onScrollDirectionChanged,
+                    onPlay = { node ->
+                        println("Clicked ${node.song?.title}")
+                    },
+                    openDetails = { node ->
+                        println("Long clicked ${node.song?.title}")
+                    }
                 )
             }
 
@@ -160,16 +166,31 @@ fun SonataNavHost(
                     onOpen = { child ->
                         navController.navigate(SonataRoute.Folder.create(child.sortId))
                     },
-                    onBack = {
-                        navController.popBackStack()
+                    onPlay = { node ->
+                        println("Clicked ${node.song?.title}")
                     },
+                    openDetails = { node ->
+                        println("Long clicked ${node.song?.title}")
+                    },
+                    onBack = { navController.popBackStack() },
                     onScrollDirectionChanged = onScrollDirectionChanged
                 )
             }
         }
+
+        composable(
+            route = SonataRoute.Search.route
+        ) {
+
+        }
+
+        composable(
+            route = SonataRoute.Settings.route
+        ) {
+
+        }
     }
 }
-
 
 @Composable
 fun AnimatedBottomBar(
@@ -293,7 +314,9 @@ fun LibraryScreen(
 @Composable
 fun AllSongsScreen(
     songList: List<FileNode>,
-    onScrollDirectionChanged: (Boolean) -> Unit
+    onScrollDirectionChanged: (Boolean) -> Unit,
+    onPlay: (FileNode) -> Unit,
+    openDetails: (FileNode) -> Unit,
 ) {
     val listState = rememberLazyListState()
     RememberScrollAwareBottomBar(listState, onScrollDirectionChanged)
@@ -320,9 +343,8 @@ fun AllSongsScreen(
         ) { node ->
             FileListItem(
                 node = node,
-                onClick = {
-                    //TODO play song
-                }
+                onClick = { onPlay(node) },
+                onLongClick = { openDetails(node) }
             )
         }
     }
@@ -355,9 +377,11 @@ fun FileRootScreen(
         }
 
         item {
-            FileListItem(node) {
-                if (node.isFolder) onOpen(node)
-            }
+            FileListItem(
+                node = node,
+                onClick = { onOpen(node) },
+                onLongClick = {}
+            )
         }
     }
 }
@@ -367,6 +391,8 @@ fun FolderScreen(
     node: FileNode,
     onOpen: (FileNode) -> Unit,
     onBack: () -> Unit,
+    onPlay: (FileNode) -> Unit,
+    openDetails: (FileNode) -> Unit,
     onScrollDirectionChanged: (Boolean) -> Unit
 ) {
     val listState = rememberLazyListState()
@@ -391,8 +417,18 @@ fun FolderScreen(
             node.children.values.toList(),
             key = { it.sortId }
         ) { child ->
-            FileListItem(child) {
-                if (child.isFolder) onOpen(child)
+            if (child.isFolder) {
+                FileListItem(
+                    node = child,
+                    onClick = { onOpen(child) },
+                    onLongClick = {}
+                )
+            } else {
+                FileListItem(
+                    node = child,
+                    onClick = { onPlay(child) },
+                    onLongClick = { openDetails(child) }
+                )
             }
         }
     }
@@ -484,7 +520,8 @@ fun FolderHeader(
 @Composable
 fun FileListItem(
     node: FileNode,
-    onClick: () -> Unit
+    onClick: (FileNode) -> Unit,
+    onLongClick: (FileNode) -> Unit
 ) {
     /*
     Row for individual file/folder
@@ -497,7 +534,8 @@ fun FileListItem(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
-                onClick = onClick
+                onClick = { onClick(node) },
+                onLongClick = { onLongClick(node) }
             )
             .padding(vertical = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
