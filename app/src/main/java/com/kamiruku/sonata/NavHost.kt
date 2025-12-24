@@ -40,6 +40,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -87,16 +88,17 @@ fun SonataApp(navController: NavHostController, viewModel: SharedViewModel) {
                 visible = bottomBarVisible,
                 navController = navController
             )
+        },
+        content = {
+            SonataNavHost(
+                navController = navController,
+                viewModel = viewModel,
+                onScrollDirectionChanged = { scrollingUp ->
+                    bottomBarVisible = scrollingUp
+                }
+            )
         }
-    ) { paddingValues ->
-        SonataNavHost(
-            navController = navController,
-            viewModel = viewModel,
-            onScrollDirectionChanged = { scrollingUp ->
-                bottomBarVisible = scrollingUp
-            }
-        )
-    }
+    )
 }
 
 @Composable
@@ -118,8 +120,6 @@ fun SonataNavHost(
             startDestination = SonataRoute.LibraryHome.route
         ) {
             composable(SonataRoute.LibraryHome.route) {
-                //always show bottom nav bar
-                LaunchedEffect(Unit) { onScrollDirectionChanged(true) }
                 LibraryScreen(
                     onAllSongsClick = { navController.navigate(SonataRoute.AllSongs.route) },
                     onFolderClick = { navController.navigate(SonataRoute.FolderRoot.route) }
@@ -134,8 +134,6 @@ fun SonataNavHost(
             }
 
             composable(SonataRoute.FolderRoot.route) {
-                //always show bottom nav bar since ideally only 2 folders max here -> no scrolling
-                LaunchedEffect(Unit) { onScrollDirectionChanged(true) }
                 FileRootScreen(
                     node = root,
                     onOpen = { node ->
@@ -223,30 +221,27 @@ fun RememberScrollAwareBottomBar(
     onScrollDirectionChanged: (Boolean) -> Unit
 ) {
     var lastScrollOffset by remember { mutableIntStateOf(0) }
+    var lastVisibility by remember { mutableStateOf(true) }
 
-    val barVisible by remember {
-        derivedStateOf {
-            //always visible at top (useful on small folder screens)
-            val atTop =
-                listState.firstVisibleItemScrollOffset == 0 &&
-                        listState.firstVisibleItemIndex == 0
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            listState.firstVisibleItemIndex to
+                    listState.firstVisibleItemScrollOffset
+        }.collect { (index, offset) ->
+            val atTop = index == 0 && offset == 0
 
-            if (atTop) {
-                true
-            } else {
-                val currentOffset =
-                    listState.firstVisibleItemIndex * 10_000 +
-                            listState.firstVisibleItemScrollOffset
+            val currentOffset = index * 10_000 + offset
+            val scrollingUp = currentOffset < lastScrollOffset
 
-                val up = currentOffset < lastScrollOffset - 10
-                lastScrollOffset = currentOffset
-                up
+            val shouldShow = atTop || scrollingUp
+
+            if (shouldShow != lastVisibility) {
+                lastVisibility = shouldShow
+                onScrollDirectionChanged(shouldShow)
             }
-        }
-    }
 
-    LaunchedEffect(barVisible) {
-        onScrollDirectionChanged(barVisible)
+            lastScrollOffset = currentOffset
+        }
     }
 }
 
