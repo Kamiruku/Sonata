@@ -1,5 +1,7 @@
 package com.kamiruku.sonata
 
+import DirectionalLazyListState
+import ScrollDirection
 import android.annotation.SuppressLint
 import android.content.ContentUris
 import android.net.Uri
@@ -34,12 +36,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -239,35 +240,12 @@ fun BottomNavBar(navController: NavHostController) {
         )
     }
 }
-
 @Composable
-fun RememberScrollAwareBottomBar(
-    listState: LazyListState,
-    onScrollDirectionChanged: (Boolean) -> Unit
-) {
-    var lastScrollOffset by remember { mutableIntStateOf(0) }
-    var lastVisibility by remember { mutableStateOf(true) }
-    var initialised by remember { mutableStateOf(false) }
-
-    LaunchedEffect(listState) {
-        snapshotFlow {
-            listState.firstVisibleItemIndex to
-                    listState.firstVisibleItemScrollOffset
-        }.collect { (index, offset) ->
-            val atTop = (index == 0 && offset == 0)
-
-            val currentOffset = index * 10_000 + offset
-            val scrollingUp = currentOffset < lastScrollOffset
-            val shouldShow = atTop || scrollingUp
-
-            if (!initialised || shouldShow != lastVisibility) {
-                initialised = true
-                lastVisibility = shouldShow
-                onScrollDirectionChanged(shouldShow)
-            }
-
-            lastScrollOffset = currentOffset
-        }
+fun rememberDirectionalLazyListState(
+    lazyListState: LazyListState,
+): DirectionalLazyListState {
+    return remember {
+        DirectionalLazyListState(lazyListState)
     }
 }
 
@@ -319,7 +297,23 @@ fun AllSongsScreen(
     openDetails: (FileNode) -> Unit,
 ) {
     val listState = rememberLazyListState()
-    RememberScrollAwareBottomBar(listState, onScrollDirectionChanged)
+    val directionState = rememberDirectionalLazyListState(listState)
+
+    val atTop by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
+        }
+    }
+
+    LaunchedEffect(directionState.scrollDirection, atTop) {
+        val shouldShow = when {
+            atTop -> true
+            directionState.scrollDirection == ScrollDirection.Up -> true
+            directionState.scrollDirection == ScrollDirection.Down -> false
+            else -> return@LaunchedEffect
+        }
+        onScrollDirectionChanged(shouldShow)
+    }
 
     LazyColumn(
         state = listState,
@@ -396,7 +390,23 @@ fun FolderScreen(
     onScrollDirectionChanged: (Boolean) -> Unit
 ) {
     val listState = rememberLazyListState()
-    RememberScrollAwareBottomBar(listState, onScrollDirectionChanged)
+    val directionState = rememberDirectionalLazyListState(listState)
+
+    val atTop by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
+        }
+    }
+
+    LaunchedEffect(directionState.scrollDirection, atTop) {
+        val shouldShow = when {
+            atTop -> true
+            directionState.scrollDirection == ScrollDirection.Up -> true
+            directionState.scrollDirection == ScrollDirection.Down -> false
+            else -> return@LaunchedEffect
+        }
+        onScrollDirectionChanged(shouldShow)
+    }
 
     LazyColumn(
         state = listState,
