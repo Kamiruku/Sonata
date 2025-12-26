@@ -1,3 +1,5 @@
+package com.kamiruku.sonata.state
+
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
