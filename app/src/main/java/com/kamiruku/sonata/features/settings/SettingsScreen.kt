@@ -1,4 +1,4 @@
-package com.kamiruku.sonata.features.library
+package com.kamiruku.sonata.features.settings
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,9 +13,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun LibraryScreen(
-    onAllSongsClick: () -> Unit,
-    onFolderClick: () -> Unit
+fun SettingsScreen(
+    onGeneralClick: () -> Unit,
+    onLibraryClick: () -> Unit,
+    onAudioClick: () -> Unit,
+    onAboutClick: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -23,7 +25,7 @@ fun LibraryScreen(
     ) {
         item {
             Text(
-                text = "Library",
+                text = "Settings",
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 30.dp),
@@ -33,10 +35,10 @@ fun LibraryScreen(
 
         item {
             Text(
-                text = "All Songs",
+                text = "General",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onAllSongsClick() }
+                    .clickable { onGeneralClick() }
                     .padding(vertical = 22.dp),
                 fontSize = 18.sp
             )
@@ -44,10 +46,32 @@ fun LibraryScreen(
 
         item {
             Text(
-                text = "Folders Hierarchy",
+                text = "Library",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onFolderClick() }
+                    .clickable { onLibraryClick() }
+                    .padding(vertical = 22.dp),
+                fontSize = 18.sp
+            )
+        }
+
+        item {
+            Text(
+                text = "Audio & Playback",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onAudioClick() }
+                    .padding(vertical = 22.dp),
+                fontSize = 18.sp
+            )
+        }
+
+        item {
+            Text(
+                text = "About",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onAboutClick() }
                     .padding(vertical = 22.dp),
                 fontSize = 18.sp
             )

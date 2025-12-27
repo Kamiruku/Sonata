@@ -13,6 +13,7 @@ import com.kamiruku.sonata.features.library.AllSongsScreen
 import com.kamiruku.sonata.features.library.FileRootScreen
 import com.kamiruku.sonata.features.library.FolderScreen
 import com.kamiruku.sonata.features.library.LibraryScreen
+import com.kamiruku.sonata.features.settings.SettingsScreen
 import com.kamiruku.sonata.navigation.SonataRoute
 import com.kamiruku.sonata.state.DirectionalLazyListState
 
@@ -89,16 +90,38 @@ fun SonataNavHost(
             }
         }
 
-        composable(
-            route = SonataRoute.Search.route
-        ) {
+        composable(route = SonataRoute.Search.route) {
 
         }
 
-        composable(
-            route = SonataRoute.Settings.route
+        navigation(
+            route = SonataRoute.Settings.route,
+            startDestination = SonataRoute.SettingsHome.route
         ) {
+            composable(route = SonataRoute.SettingsHome.route) {
+                SettingsScreen(
+                    onGeneralClick = { navController.navigate(SonataRoute.SettingsGeneral.route) },
+                    onLibraryClick = { navController.navigate(SonataRoute.LibraryHome.route) },
+                    onAudioClick = { navController.navigate(SonataRoute.SettingsAudio.route) },
+                    onAboutClick = { navController.navigate(SonataRoute.SettingsAbout.route) }
+                )
+            }
 
+            composable(SonataRoute.SettingsGeneral.route) {
+
+            }
+
+            composable(SonataRoute.SettingsLibrary.route) {
+
+            }
+
+            composable(SonataRoute.SettingsAudio.route) {
+
+            }
+
+            composable(SonataRoute.SettingsAbout.route) {
+
+            }
         }
     }
 }
