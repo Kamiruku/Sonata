@@ -1,7 +1,10 @@
 package com.kamiruku.sonata.features.library
 
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -14,9 +17,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.samples.apps.nowinandroid.core.designsystem.component.scrollbar.DraggableScrollbar
+import com.google.samples.apps.nowinandroid.core.designsystem.component.scrollbar.rememberDraggableScroller
+import com.google.samples.apps.nowinandroid.core.designsystem.component.scrollbar.scrollbarState
 import com.kamiruku.sonata.FileNode
 import com.kamiruku.sonata.features.library.components.FileListItem
 import com.kamiruku.sonata.rememberDirectionalLazyListState
@@ -48,30 +55,48 @@ fun AllSongsScreen(
         onScrollDirectionChanged(shouldShow)
     }
 
-    LazyColumn(
-        state = listState,
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(25.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        item {
-            Text(
-                text = "All Songs",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 30.dp),
-                fontSize = 22.sp
-            )
+    Box {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(25.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            item {
+                Text(
+                    text = "All Songs",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 30.dp),
+                    fontSize = 22.sp
+                )
+            }
+
+            items(
+                items = songList,
+                key = { it.sortId }
+            ) { node ->
+                FileListItem(
+                    node = node,
+                    onClick = { onPlay(node) },
+                    onLongClick = { openDetails(node) }
+                )
+            }
         }
 
-        items(
-            items = songList,
-            key = { it.sortId }
-        ) { node ->
-            FileListItem(
-                node = node,
-                onClick = { onPlay(node) },
-                onLongClick = { openDetails(node) }
+        //... some arbitrary size
+        if (songList.size > 25) {
+            val scrollBarState = listState.scrollbarState(songList.size)
+            val onDrag = listState.rememberDraggableScroller(songList.size)
+
+            listState.DraggableScrollbar(
+                state = scrollBarState,
+                orientation = Orientation.Vertical,
+                onThumbMoved = { percent -> onDrag(percent) },
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxHeight()
+                    .padding(top = 100.dp, end = 4.dp, bottom = 150.dp)
             )
         }
     }

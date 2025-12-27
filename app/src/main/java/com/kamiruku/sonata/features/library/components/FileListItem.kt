@@ -1,5 +1,6 @@
 package com.kamiruku.sonata.features.library.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +26,7 @@ import com.kamiruku.sonata.FileNode
 import com.kamiruku.sonata.utils.getAlbumArt
 import com.kamiruku.sonata.utils.toTime
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FileListItem(
     node: FileNode,
