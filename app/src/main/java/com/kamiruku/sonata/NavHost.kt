@@ -2,7 +2,10 @@ package com.kamiruku.sonata
 
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -16,6 +19,7 @@ import com.kamiruku.sonata.features.library.LibraryScreen
 import com.kamiruku.sonata.features.settings.SettingsScreen
 import com.kamiruku.sonata.navigation.SonataRoute
 import com.kamiruku.sonata.state.DirectionalLazyListState
+import com.kamiruku.sonata.ui.components.SongDetailsDialog
 
 @Composable
 fun SonataNavHost(
@@ -26,6 +30,8 @@ fun SonataNavHost(
     val root = viewModel.getRootNode() ?: return
     val songList = viewModel.getSongList()
     if (songList.isEmpty()) return
+
+    var selectedFile by remember { mutableStateOf<FileNode?>(null) }
 
     NavHost(
         navController = navController,
@@ -50,7 +56,7 @@ fun SonataNavHost(
                         println("Clicked ${node.song?.title}")
                     },
                     openDetails = { node ->
-                        println("Long clicked ${node.song?.title}")
+                        selectedFile = node
                     }
                 )
             }
@@ -82,7 +88,7 @@ fun SonataNavHost(
                         println("Clicked ${node.song?.title}")
                     },
                     openDetails = { node ->
-                        println("Long clicked ${node.song?.title}")
+                        selectedFile = node
                     },
                     onBack = { navController.popBackStack() },
                     onScrollDirectionChanged = onScrollDirectionChanged
@@ -124,6 +130,11 @@ fun SonataNavHost(
             }
         }
     }
+
+    SongDetailsDialog(
+        file = selectedFile,
+        onDismiss = { selectedFile = null }
+    )
 }
 
 @Composable

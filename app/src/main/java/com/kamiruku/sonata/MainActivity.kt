@@ -2,6 +2,7 @@ package com.kamiruku.sonata
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
@@ -11,6 +12,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -93,7 +95,7 @@ class MainActivity : FragmentActivity() {
 
         val audioList = mutableListOf<Song>()
 
-        try {
+
             //TODO replace placeholder path
             val audioCursor = contentResolver.query(
                 musicUri,
@@ -103,40 +105,51 @@ class MainActivity : FragmentActivity() {
                 null
             ) ?: return emptyList()
 
-            audioCursor.use { cursor ->
-                val idColumn: Int = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns._ID)
-                val titleColumn = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.TITLE)
-                val artistColumn: Int = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.ARTIST)
-                val relativePathColumn: Int = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.RELATIVE_PATH)
-                val albumColumn: Int = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.ALBUM)
-                val durationColumn: Int = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DURATION)
-                val albumIdColumn: Int = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.ALBUM_ID)
-                val displayNameColumn: Int = audioCursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DISPLAY_NAME)
+        audioCursor.use { cursor ->
+            val idColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns._ID)
+            val titleColumn = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.TITLE)
+            val artistColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.ARTIST)
+            val relativePathColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.RELATIVE_PATH)
+            val albumColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.ALBUM)
+            val durationColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.DURATION)
+            val albumIdColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.ALBUM_ID)
+            val displayNameColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.DISPLAY_NAME)
 
-                cursor.apply {
-                    if (count == 0) Log.d("Cursor", "get cursor data: Cursor is empty.")
-                    else {
-                        while (cursor.moveToNext()) {
+            cursor.apply {
+                if (count == 0) Log.d("Cursor", "get cursor data: Cursor is empty.")
+                else {
+                    while (cursor.moveToNext()) {
+                        try {
+                            val iD = cursor.getLong(idColumn)
+                            val title = cursor.getString(titleColumn)
+                            val artist = cursor.getString(artistColumn)
+                            val path = cursor.getString(relativePathColumn) + cursor.getString(displayNameColumn)
+                            val album = cursor.getString(albumColumn)
+                            val duration = cursor.getLong(durationColumn)
+                            val albumId = cursor.getLong(albumIdColumn)
+
                             audioList += Song(
-                                iD = cursor.getLong(idColumn),
-                                title = cursor.getString(titleColumn),
-                                artist = cursor.getString(artistColumn),
-                                path = cursor.getString(relativePathColumn) + cursor.getString(displayNameColumn),
-                                album = cursor.getString(albumColumn),
-                                duration = cursor.getLong(durationColumn),
-                                albumId = cursor.getLong(albumIdColumn)
+                                iD = iD,
+                                title = title,
+                                artist = artist,
+                                path = path,
+                                album = album,
+                                duration = duration,
+                                albumId = albumId,
+                                track = -1,
+                                disc = -1,
+                                year = "-1"
                             )
+                        } catch (e: Exception) {
+                            Log.e("Cursor read", "ERR", e)
                         }
+
                     }
                 }
             }
-            audioCursor.close()
-
-        } catch(e: SecurityException) {
-            Log.e("MainActivity", "SE",e)
-        } catch(e: Exception) {
-            Log.e("MainActivity", "MSE", e)
         }
+        audioCursor.close()
+
 
         return audioList
     }

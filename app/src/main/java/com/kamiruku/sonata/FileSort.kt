@@ -20,13 +20,16 @@ data class FileNode(
 ) : Parcelable
 
 data class Song (
-    var iD: Long = 0,
-    var title: String? = null,
-    var artist: String? = null,
-    var path: String? = null,
-    var album: String? = null,
-    var duration: Long? = null,
-    var albumId: Long = 0
+    val iD: Long,
+    val title: String,
+    val artist: String,
+    val path: String,
+    val album: String,
+    val duration: Long,
+    val albumId: Long,
+    val track: Int,
+    val disc: Int,
+    val year: String
 )
 
 object FileTreeBuilder {
