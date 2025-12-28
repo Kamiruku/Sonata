@@ -3,6 +3,7 @@ package com.kamiruku.sonata.ui.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -45,6 +46,7 @@ fun SongDetailsDialog(
         ) {
             Surface(
                 shape = MaterialTheme.shapes.medium,
+                border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight()
@@ -78,6 +80,8 @@ fun SongDetailsDialog(
                     }
 
                     InfoLabel("Album", song.album)
+
+                    InfoLabel("Artist", song.artist)
 
                     Spacer(modifier = Modifier.height(20.dp))
                 }

@@ -42,10 +42,9 @@ object FileTreeBuilder {
 
         for (song in audioList) {
             val parts = song.path
-                ?.replace(commonPrefix, "")
-                ?.split('/')
-                ?.filter { it.isNotBlank() }
-                ?: continue
+                .replace(commonPrefix, "")
+                .split('/')
+                .filter { it.isNotBlank() }
 
             var currentNode = root
 
@@ -96,7 +95,7 @@ object FileTreeBuilder {
     }
 
     private fun findCommonPrefix(audioList: List<Song>): String {
-        val paths = audioList.mapNotNull { it.path }
+        val paths = audioList.map { it.path }
 
         if (paths.isEmpty()) return ""
 
