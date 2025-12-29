@@ -73,23 +73,21 @@ JNIEXPORT void JNI_OnUnload(JavaVM *vm, void *) {
     env->DeleteGlobalRef(g_hashMapClass);
 }
 
-
 extern "C"
 JNIEXPORT jobject JNICALL
-Java_com_kamiruku_sonata_taglib_TagLib_getMetadata(JNIEnv *env,
-                                                   jobject thiz,
-                                                   jstring jpath) {
-    const char* path = env->GetStringUTFChars(jpath, nullptr);
-    TagLib::FileRef file(TagLib::FileName(path), true);
-    jobject propertiesMap = propertyMapToHashMap(env, file.properties());
+Java_com_kamiruku_sonata_taglib_TagLib_getMetadata(JNIEnv *env,jobject thiz,jint fd) {
+    fd = dup(fd);
+    auto stream = std::make_unique<TagLib::FileStream>(fd, true);
+    TagLib::FileRef file(stream.get(), true);
 
+    jobject propertiesMap = propertyMapToHashMap(env, file.properties());
     return propertiesMap;
 }
 
 extern "C"
-JNIEXPORT jintArray JNICALL Java_com_kamiruku_sonata_taglib_TagLib_getAudioProperties(JNIEnv *env,
-                                                                                      jobject thiz,
-                                                                                      jint fd) {
+JNIEXPORT jintArray JNICALL
+Java_com_kamiruku_sonata_taglib_TagLib_getAudioProperties(JNIEnv* env,jobject thiz, jint fd) {
+    fd = dup(fd);
     auto stream = std::make_unique<TagLib::FileStream>(fd, true);
     TagLib::FileRef file(stream.get(), true);
 

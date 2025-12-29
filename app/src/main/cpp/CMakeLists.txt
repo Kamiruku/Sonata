@@ -12,7 +12,9 @@ include_directories(
         taglib/taglib/ogg
         taglib/taglib/wavpack
         taglib/taglib/mpeg
+        taglib/taglib/mpeg/id3v2
         taglib/taglib/toolkit
+        taglib/taglib/riff
 )
 
 add_library(${CMAKE_PROJECT_NAME}
