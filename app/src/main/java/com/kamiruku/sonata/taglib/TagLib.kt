@@ -1,7 +1,7 @@
 package com.kamiruku.sonata.taglib
 
 object TagLib {
-    init { System.loadLibrary("sonata") }
+    init { System.loadLibrary("taglib") }
 
     external fun getMetadata(fd: Int): HashMap<String, Array<String>>
 

@@ -139,45 +139,45 @@ class MainActivity : FragmentActivity() {
 
     fun getSongDetailsTagLib(id: Long, albumId: Long, path: String): Song? {
         val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
-        val pfd = contentResolver.openFileDescriptor(uri, "r") ?: return null
-        val fd = pfd.detachFd()
+        contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
+            val fd = pfd.detachFd()
 
-        val prop = TagLib.getAudioProperties(fd)
-        val metadata = TagLib.getMetadata(fd)
+            val prop = TagLib.getAudioProperties(fd)
+            val metadata = TagLib.getMetadata(fd)
 
-        //be as faithful to the tags as possible.
-        val title = metadata["TITLE"]?.firstOrNull()?.takeIf { it.isNotBlank() } ?: ""
-        val artist = metadata["ARTIST"]?.firstOrNull()?.takeIf { it.isNotBlank() } ?: ""
-        val album = metadata["ALBUM"]?.firstOrNull()?.takeIf { it.isNotBlank() } ?: ""
+            //be as faithful to the tags as possible.
+            val title = metadata["TITLE"]?.firstOrNull()?.takeIf { it.isNotBlank() } ?: ""
+            val artist = metadata["ARTIST"]?.firstOrNull()?.takeIf { it.isNotBlank() } ?: ""
+            val album = metadata["ALBUM"]?.firstOrNull()?.takeIf { it.isNotBlank() } ?: ""
 
-        val date = metadata["DATE"]?.firstOrNull()?.takeIf { it.isNotBlank() }
-            ?: metadata["YEAR"]?.firstOrNull()?.takeIf { it.isNotBlank() } ?: ""
-        val trackString = (metadata["TRACKNUMBER"]?.firstOrNull()?.takeIf { it.isNotBlank() }
-            ?: metadata["TRACK"]?.firstOrNull()?.takeIf { it.isNotBlank() }) ?: ""
-        val discString = (metadata["DISCNUMBER"]?.firstOrNull()?.takeIf { it.isNotBlank() }
-            ?: metadata["TPOS"]?.firstOrNull()?.takeIf { it.isNotBlank() }) ?: ""
+            val date = metadata["DATE"]?.firstOrNull()?.takeIf { it.isNotBlank() }
+                ?: metadata["YEAR"]?.firstOrNull()?.takeIf { it.isNotBlank() } ?: ""
+            val trackString = (metadata["TRACKNUMBER"]?.firstOrNull()?.takeIf { it.isNotBlank() }
+                ?: metadata["TRACK"]?.firstOrNull()?.takeIf { it.isNotBlank() }) ?: ""
+            val discString = (metadata["DISCNUMBER"]?.firstOrNull()?.takeIf { it.isNotBlank() }
+                ?: metadata["TPOS"]?.firstOrNull()?.takeIf { it.isNotBlank() }) ?: ""
 
-        val duration = prop[0].toLong()
-        val bitrate = prop[1]
-        val sampleRate = prop[2]
-        val channels = prop[3]
+            val duration = prop[0].toLong()
+            val bitrate = prop[1]
+            val sampleRate = prop[2]
+            val channels = prop[3]
 
-        pfd.close()
-
-        return Song(
-            iD = id,
-            title = title,
-            artist = artist,
-            album = album,
-            duration = duration,
-            albumId = albumId,
-            disc = discString,
-            track = trackString,
-            date = date,
-            path = path,
-            bitrate = bitrate,
-            sampleRate = sampleRate,
-            channels = channels
-        )
+            return Song(
+                iD = id,
+                title = title,
+                artist = artist,
+                album = album,
+                duration = duration,
+                albumId = albumId,
+                disc = discString,
+                track = trackString,
+                date = date,
+                path = path,
+                bitrate = bitrate,
+                sampleRate = sampleRate,
+                channels = channels
+            )
+        }
+        return null
     }
 }

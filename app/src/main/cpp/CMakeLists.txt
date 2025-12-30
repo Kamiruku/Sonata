@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22.1)
 
-project(sonata)
+project(taglib)
 
 add_subdirectory(taglib)
 
@@ -19,7 +19,7 @@ include_directories(
 
 add_library(${CMAKE_PROJECT_NAME}
         SHARED
-        sonata.cpp)
+        taglib.cpp)
 
 target_link_libraries(${CMAKE_PROJECT_NAME}
     android
