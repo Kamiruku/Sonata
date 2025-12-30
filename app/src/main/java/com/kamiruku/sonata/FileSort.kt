@@ -27,9 +27,12 @@ data class Song (
     val album: String,
     val duration: Long,
     val albumId: Long,
-    val track: Int,
-    val disc: Int,
-    val year: String
+    val track: String,
+    val disc: String,
+    val date: String,
+    val bitrate : Int,
+    val sampleRate: Int,
+    val channels: Int
 )
 
 object FileTreeBuilder {

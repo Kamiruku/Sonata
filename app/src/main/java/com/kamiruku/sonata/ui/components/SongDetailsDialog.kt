@@ -66,6 +66,17 @@ fun SongDetailsDialog(
                         style = MaterialTheme.typography.bodyMedium
                     )
 
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 25.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        InfoLabel("Bitrate", "${song.bitrate} kbps")
+                        InfoLabel("Sample Rate", "${song.sampleRate} Hz")
+                        InfoLabel("Channels", "${song.channels}")
+                    }
+
                     InfoLabel("Title", song.title)
 
                     Row(
@@ -74,9 +85,9 @@ fun SongDetailsDialog(
                             .padding(vertical = 25.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        InfoLabel("Track", "${song.track}")
-                        InfoLabel("Disc", "${song.disc}")
-                        InfoLabel("Year", song.year)
+                        InfoLabel("Track", song.track)
+                        InfoLabel("Disc", song.disc)
+                        InfoLabel("Date", song.date)
                     }
 
                     InfoLabel("Album", song.album)

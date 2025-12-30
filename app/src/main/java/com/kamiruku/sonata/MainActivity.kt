@@ -1,6 +1,7 @@
 package com.kamiruku.sonata
 
 import android.Manifest
+import android.content.ContentUris
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.provider.MediaStore
@@ -17,8 +18,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
+import com.kamiruku.sonata.taglib.TagLib
 import com.kamiruku.sonata.ui.theme.SonataTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 class MainActivity : FragmentActivity() {
@@ -71,10 +77,14 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun loadMusic() {
-        val audioList = getAudioFilesViaMediaStore()
-        Log.d("FILE AMOUNT", audioList.size.toString())
-        val rootNode = FileTreeBuilder.buildTree(audioList)
-        viewModel.setList(rootNode)
+        lifecycleScope.launch(Dispatchers.IO) {
+            val audioList = getAudioFilesViaMediaStore()
+            val rootNode = FileTreeBuilder.buildTree(audioList)
+
+            withContext(Dispatchers.Main) {
+                viewModel.setList(rootNode)
+            }
+        }
     }
 
     fun getAudioFilesViaMediaStore(): List<Song> {
@@ -82,71 +92,92 @@ class MainActivity : FragmentActivity() {
         val musicUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
         val projection = arrayOf(
             MediaStore.Audio.Media._ID,
-            MediaStore.Audio.Media.TITLE,
-            MediaStore.Audio.Media.ARTIST,
-            MediaStore.Audio.Media.DURATION,
             MediaStore.Audio.Media.ALBUM_ID,
-            MediaStore.Audio.Media.ALBUM,
             MediaStore.Audio.Media.RELATIVE_PATH,
             MediaStore.Audio.Media.DISPLAY_NAME
         )
 
         val audioList = mutableListOf<Song>()
 
-
-            //TODO replace placeholder path
-            val audioCursor = contentResolver.query(
-                musicUri,
-                projection,
-                "${MediaStore.Audio.Media.RELATIVE_PATH} LIKE ?",
-                arrayOf("%Music%"),
-                null
-            ) ?: return emptyList()
+        //TODO replace placeholder path
+        val audioCursor = contentResolver.query(
+            musicUri,
+            projection,
+            "${MediaStore.Audio.Media.RELATIVE_PATH} LIKE ?",
+            arrayOf("%Music%"),
+            null
+        ) ?: return emptyList()
 
         audioCursor.use { cursor ->
             val idColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns._ID)
-            val titleColumn = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.TITLE)
-            val artistColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.ARTIST)
             val relativePathColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.RELATIVE_PATH)
-            val albumColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.ALBUM)
-            val durationColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.DURATION)
             val albumIdColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.ALBUM_ID)
             val displayNameColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.DISPLAY_NAME)
 
             cursor.apply {
+                println(count)
                 if (count == 0) Log.d("Cursor", "get cursor data: Cursor is empty.")
                 else {
                     while (cursor.moveToNext()) {
                         try {
                             val iD = cursor.getLong(idColumn)
-                            val title = cursor.getString(titleColumn)
-                            val artist = cursor.getString(artistColumn)
                             val path = cursor.getString(relativePathColumn) + cursor.getString(displayNameColumn)
-                            val album = cursor.getString(albumColumn)
-                            val duration = cursor.getLong(durationColumn)
                             val albumId = cursor.getLong(albumIdColumn)
 
-                            audioList += Song(
-                                iD = iD,
-                                title = title,
-                                artist = artist,
-                                path = path,
-                                album = album,
-                                duration = duration,
-                                albumId = albumId,
-                                track = -1,
-                                disc = -1,
-                                year = "-1"
-                            )
+                            val song = getSongDetailsTagLib(iD, albumId, path)
+
+                            if (song != null) audioList += song
                         } catch (e: Exception) {
                             Log.e("Cursor read", "ERR", e)
                         }
-
                     }
                 }
             }
         }
-        audioCursor.close()
         return audioList
+    }
+
+    fun getSongDetailsTagLib(id: Long, albumId: Long, path: String): Song? {
+        val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
+        val pfd = contentResolver.openFileDescriptor(uri, "r") ?: return null
+        val fd = pfd.detachFd()
+
+        val prop = TagLib.getAudioProperties(fd)
+        val metadata = TagLib.getMetadata(fd)
+
+        //be as faithful to the tags as possible.
+        val title = metadata["TITLE"]?.firstOrNull()?.takeIf { it.isNotBlank() } ?: ""
+        val artist = metadata["ARTIST"]?.firstOrNull()?.takeIf { it.isNotBlank() } ?: ""
+        val album = metadata["ALBUM"]?.firstOrNull()?.takeIf { it.isNotBlank() } ?: ""
+
+        val date = metadata["DATE"]?.firstOrNull()?.takeIf { it.isNotBlank() }
+            ?: metadata["YEAR"]?.firstOrNull()?.takeIf { it.isNotBlank() } ?: ""
+        val trackString = (metadata["TRACKNUMBER"]?.firstOrNull()?.takeIf { it.isNotBlank() }
+            ?: metadata["TRACK"]?.firstOrNull()?.takeIf { it.isNotBlank() }) ?: ""
+        val discString = (metadata["DISCNUMBER"]?.firstOrNull()?.takeIf { it.isNotBlank() }
+            ?: metadata["TPOS"]?.firstOrNull()?.takeIf { it.isNotBlank() }) ?: ""
+
+        val duration = prop[0].toLong()
+        val bitrate = prop[1]
+        val sampleRate = prop[2]
+        val channels = prop[3]
+
+        pfd.close()
+
+        return Song(
+            iD = id,
+            title = title,
+            artist = artist,
+            album = album,
+            duration = duration,
+            albumId = albumId,
+            disc = discString,
+            track = trackString,
+            date = date,
+            path = path,
+            bitrate = bitrate,
+            sampleRate = sampleRate,
+            channels = channels
+        )
     }
 }
