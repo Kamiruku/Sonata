@@ -6,6 +6,8 @@
 #include "toolkit/tfilestream.h"
 #include "toolkit/tstringlist.h"
 #include "tpropertymap.h"
+#include "wav/wavproperties.h"
+#include "flacproperties.h"
 
 jclass g_stringClass = nullptr;
 
@@ -91,7 +93,7 @@ Java_com_kamiruku_sonata_taglib_TagLib_getAudioProperties(JNIEnv* env,jobject th
     auto stream = std::make_unique<TagLib::FileStream>(fd, true);
     TagLib::FileRef file(stream.get(), true);
 
-    jint values[4] = {0, 0, 0, 0};
+    jint values[5] = {-1, -1, -1, -1, -1};
 
     if (!file.isNull()) {
         auto props = file.audioProperties();
@@ -100,10 +102,19 @@ Java_com_kamiruku_sonata_taglib_TagLib_getAudioProperties(JNIEnv* env,jobject th
             values[1] = props->bitrate();
             values[2] = props->sampleRate();
             values[3] = props->channels();
+
+            int bitsPerSample = -1;
+            if (auto *wav = dynamic_cast<TagLib::RIFF::WAV::Properties*>(props)) {
+                bitsPerSample = wav->bitsPerSample();
+            } else if (auto *flac = dynamic_cast<TagLib::FLAC::Properties*>(props)) {
+                bitsPerSample = flac->bitsPerSample();
+            }
+
+            values[4] = bitsPerSample;
         }
     }
 
-    jintArray result = env->NewIntArray(4);
-    env->SetIntArrayRegion(result, 0, 4, values);
+    jintArray result = env->NewIntArray(5);
+    env->SetIntArrayRegion(result, 0, 5, values);
     return result;
 }

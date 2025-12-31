@@ -38,9 +38,7 @@ class MainActivity : FragmentActivity() {
         permissionLauncher = registerForActivityResult(
             ActivityResultContracts.RequestPermission()
         ) { isGranted ->
-            if (isGranted) {
-                loadMusic()
-            } else {
+            if (!isGranted) {
                 Toast.makeText(this, "Permission denied: READ_MEDIA_AUDIO", Toast.LENGTH_SHORT).show()
 
             }
@@ -161,6 +159,9 @@ class MainActivity : FragmentActivity() {
             val bitrate = prop[1]
             val sampleRate = prop[2]
             val channels = prop[3]
+            val bitsPerSample = prop[4]
+
+            println(bitsPerSample)
 
             return Song(
                 iD = id,
