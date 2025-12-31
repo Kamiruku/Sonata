@@ -161,8 +161,6 @@ class MainActivity : FragmentActivity() {
             val channels = prop[3]
             val bitsPerSample = prop[4]
 
-            println(bitsPerSample)
-
             return Song(
                 iD = id,
                 title = title,

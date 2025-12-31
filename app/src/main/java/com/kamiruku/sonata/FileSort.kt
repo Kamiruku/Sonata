@@ -37,15 +37,18 @@ data class Song (
 
 object FileTreeBuilder {
     fun buildTree(audioList: List<Song>): FileNode {
-        val commonPrefix = findCommonPrefix(audioList)
-        val lastFolderName = commonPrefix.trimEnd('/').substringAfterLast('/')
+        val parentFolder = findParentFolder(audioList)
+        val lastFolderName = parentFolder
+            .trimEnd('/')
+            .substringAfterLast('/')
+            .ifBlank { "root" }
 
         val root = FileNode(lastFolderName, isFolder = true)
         var sortId = 0
 
         for (song in audioList) {
             val parts = song.path
-                .replace(commonPrefix, "")
+                .replace(parentFolder, "")
                 .split('/')
                 .filter { it.isNotBlank() }
 
@@ -97,24 +100,27 @@ object FileTreeBuilder {
         node.children.putAll(sorted)
     }
 
-    private fun findCommonPrefix(audioList: List<Song>): String {
+    private fun findParentFolder(audioList: List<Song>): String {
         val paths = audioList.map { it.path }
 
         if (paths.isEmpty()) return ""
 
-        val first = paths[0]
-        var end: Int
+        val splitPaths = paths.map { it.split('/') }
 
-        for (i in first.indices) {
-            val c = first[i]
-            for (s in paths) {
-                if (i >= s.length || s[i] != c) {
-                    end = i
-                    return first.take(end)
-                }
+        val first = splitPaths[0]
+        val common = mutableListOf<String>()
+
+        for (index in first.indices) {
+            val segment = first[index]
+
+            if (splitPaths.any { it.size <= index || it[index] != segment }) {
+                break
             }
+
+            common += segment
         }
-        return first
+
+        return common.joinToString("/")
     }
 }
 
