@@ -20,20 +20,79 @@ data class FileNode(
 ) : Parcelable
 
 data class Song (
+    //mediastore ids
     val iD: Long,
-    val title: String,
-    val artist: String,
-    val path: String,
-    val album: String,
-    val duration: Long,
     val albumId: Long,
+
+    //metadata
+    val artists: Array<String>,
+    val title: String,
+    val album: String,
+    val date: String,
+    val albumArtist: String,
     val track: String,
     val disc: String,
-    val date: String,
+
+    //audio properties
     val bitrate : Int,
     val sampleRate: Int,
-    val channels: Int
-)
+    val channels: Int,
+    val bitsPerSample: Int,
+    val duration: Long,
+
+    //file properties
+    val dateModified: Long,
+    val size: Long,
+    val path: String
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Song
+
+        if (iD != other.iD) return false
+        if (albumId != other.albumId) return false
+        if (bitrate != other.bitrate) return false
+        if (sampleRate != other.sampleRate) return false
+        if (channels != other.channels) return false
+        if (bitsPerSample != other.bitsPerSample) return false
+        if (duration != other.duration) return false
+        if (dateModified != other.dateModified) return false
+        if (size != other.size) return false
+        if (!artists.contentEquals(other.artists)) return false
+        if (title != other.title) return false
+        if (album != other.album) return false
+        if (date != other.date) return false
+        if (albumArtist != other.albumArtist) return false
+        if (track != other.track) return false
+        if (disc != other.disc) return false
+        if (path != other.path) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = iD.hashCode()
+        result = 31 * result + albumId.hashCode()
+        result = 31 * result + bitrate
+        result = 31 * result + sampleRate
+        result = 31 * result + channels
+        result = 31 * result + bitsPerSample
+        result = 31 * result + duration.hashCode()
+        result = 31 * result + dateModified.hashCode()
+        result = 31 * result + size.hashCode()
+        result = 31 * result + artists.contentHashCode()
+        result = 31 * result + title.hashCode()
+        result = 31 * result + album.hashCode()
+        result = 31 * result + date.hashCode()
+        result = 31 * result + albumArtist.hashCode()
+        result = 31 * result + track.hashCode()
+        result = 31 * result + disc.hashCode()
+        result = 31 * result + path.hashCode()
+        return result
+    }
+}
 
 object FileTreeBuilder {
     fun buildTree(audioList: List<Song>): FileNode {

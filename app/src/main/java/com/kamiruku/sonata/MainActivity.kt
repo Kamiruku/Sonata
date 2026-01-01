@@ -92,7 +92,10 @@ class MainActivity : FragmentActivity() {
             MediaStore.Audio.Media._ID,
             MediaStore.Audio.Media.ALBUM_ID,
             MediaStore.Audio.Media.RELATIVE_PATH,
-            MediaStore.Audio.Media.DISPLAY_NAME
+            MediaStore.Audio.Media.DISPLAY_NAME,
+            MediaStore.Audio.Media.DATE_ADDED,
+            MediaStore.Audio.Media.DATE_MODIFIED,
+            MediaStore.Audio.Media.SIZE
         )
 
         val audioList = mutableListOf<Song>()
@@ -107,10 +110,12 @@ class MainActivity : FragmentActivity() {
         ) ?: return emptyList()
 
         audioCursor.use { cursor ->
-            val idColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns._ID)
-            val relativePathColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.RELATIVE_PATH)
-            val albumIdColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.ALBUM_ID)
-            val displayNameColumn: Int = audioCursor.getColumnIndex(MediaStore.Audio.AudioColumns.DISPLAY_NAME)
+            val idColumn = cursor.getColumnIndex(MediaStore.Audio.AudioColumns._ID)
+            val relativePathColumn = cursor.getColumnIndex(MediaStore.Audio.AudioColumns.RELATIVE_PATH)
+            val albumIdColumn = cursor.getColumnIndex(MediaStore.Audio.AudioColumns.ALBUM_ID)
+            val displayNameColumn = cursor.getColumnIndex(MediaStore.Audio.AudioColumns.DISPLAY_NAME)
+            val dateModifiedColumn = cursor.getColumnIndex(MediaStore.Audio.Media.DATE_MODIFIED)
+            val sizeColumn = cursor.getColumnIndex(MediaStore.Audio.Media.SIZE)
 
             cursor.apply {
                 println(count)
@@ -121,8 +126,10 @@ class MainActivity : FragmentActivity() {
                             val iD = cursor.getLong(idColumn)
                             val path = cursor.getString(relativePathColumn) + cursor.getString(displayNameColumn)
                             val albumId = cursor.getLong(albumIdColumn)
+                            val dateModified = cursor.getLong(dateModifiedColumn) * 1000L //s -> ms
+                            val size = cursor.getLong(sizeColumn)
 
-                            val song = getSongDetailsTagLib(iD, albumId, path)
+                            val song = getSongDetailsTagLib(iD, albumId, path, dateModified, size)
 
                             if (song != null) audioList += song
                         } catch (e: Exception) {
@@ -135,7 +142,7 @@ class MainActivity : FragmentActivity() {
         return audioList
     }
 
-    fun getSongDetailsTagLib(id: Long, albumId: Long, path: String): Song? {
+    fun getSongDetailsTagLib(id: Long, albumId: Long, path: String, dateModified: Long, size: Long): Song? {
         val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
         contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
             val fd = pfd.detachFd()
@@ -144,12 +151,13 @@ class MainActivity : FragmentActivity() {
             val metadata = TagLib.getMetadata(fd)
 
             //be as faithful to the tags as possible.
+            val artists = metadata["ARTIST"] ?: emptyArray()
             val title = metadata["TITLE"]?.firstOrNull()?.takeIf { it.isNotBlank() } ?: ""
-            val artist = metadata["ARTIST"]?.firstOrNull()?.takeIf { it.isNotBlank() } ?: ""
             val album = metadata["ALBUM"]?.firstOrNull()?.takeIf { it.isNotBlank() } ?: ""
-
             val date = metadata["DATE"]?.firstOrNull()?.takeIf { it.isNotBlank() }
                 ?: metadata["YEAR"]?.firstOrNull()?.takeIf { it.isNotBlank() } ?: ""
+            val albumArtist = metadata["ALBUMARTIST"]?.firstOrNull()?.takeIf { it.isNotBlank() }
+                ?: metadata["ALBUM ARTIST"]?.firstOrNull()?.takeIf { it.isNotBlank() } ?: ""
             val trackString = (metadata["TRACKNUMBER"]?.firstOrNull()?.takeIf { it.isNotBlank() }
                 ?: metadata["TRACK"]?.firstOrNull()?.takeIf { it.isNotBlank() }) ?: ""
             val discString = (metadata["DISCNUMBER"]?.firstOrNull()?.takeIf { it.isNotBlank() }
@@ -163,18 +171,23 @@ class MainActivity : FragmentActivity() {
 
             return Song(
                 iD = id,
-                title = title,
-                artist = artist,
-                album = album,
-                duration = duration,
                 albumId = albumId,
-                disc = discString,
-                track = trackString,
+                artists = artists,
+                title = title,
+                album = album,
                 date = date,
-                path = path,
+                albumArtist = albumArtist,
+                track = trackString,
+                disc = discString,
                 bitrate = bitrate,
                 sampleRate = sampleRate,
-                channels = channels
+                channels = channels,
+                bitsPerSample = bitsPerSample,
+                duration = duration,
+
+                dateModified = dateModified,
+                size = size,
+                path = path
             )
         }
         return null
