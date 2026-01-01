@@ -1,10 +1,8 @@
 package com.kamiruku.sonata
 
 import android.Manifest
-import android.content.ContentUris
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
@@ -20,7 +18,8 @@ import androidx.core.app.ActivityCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
-import com.kamiruku.sonata.taglib.TagLib
+import com.kamiruku.sonata.db.SongEntity
+import com.kamiruku.sonata.db.SongRepository
 import com.kamiruku.sonata.ui.theme.SonataTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -40,26 +39,10 @@ class MainActivity : FragmentActivity() {
         ) { isGranted ->
             if (!isGranted) {
                 Toast.makeText(this, "Permission denied: READ_MEDIA_AUDIO", Toast.LENGTH_SHORT).show()
-
             }
         }
 
         checkPermission()
-
-        setContent {
-            SonataTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.surface
-                ) {
-                    SonataApp(
-                        navController = rememberNavController(),
-                        viewModel = viewModel
-                    )
-                }
-
-            }
-        }
     }
 
     fun checkPermission() {
@@ -76,120 +59,55 @@ class MainActivity : FragmentActivity() {
 
     private fun loadMusic() {
         lifecycleScope.launch(Dispatchers.IO) {
-            val audioList = getAudioFilesViaMediaStore()
-            val rootNode = FileTreeBuilder.buildTree(audioList)
+            val repository = SongRepository(this@MainActivity)
+            val mediaStoreSource = MediaStoreSource(contentResolver)
+
+            mediaStoreSource.syncLibrary(repository)
+            val songList = repository.getAllSongs().map {
+                it.toUiModel()
+            }
+            val rootNode = FileTreeBuilder.buildTree(songList)
 
             withContext(Dispatchers.Main) {
                 viewModel.setList(rootNode)
-            }
-        }
-    }
 
-    fun getAudioFilesViaMediaStore(): List<Song> {
-        //.nomedia affected
-        val musicUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
-        val projection = arrayOf(
-            MediaStore.Audio.Media._ID,
-            MediaStore.Audio.Media.ALBUM_ID,
-            MediaStore.Audio.Media.RELATIVE_PATH,
-            MediaStore.Audio.Media.DISPLAY_NAME,
-            MediaStore.Audio.Media.DATE_ADDED,
-            MediaStore.Audio.Media.DATE_MODIFIED,
-            MediaStore.Audio.Media.SIZE
-        )
-
-        val audioList = mutableListOf<Song>()
-
-        //TODO replace placeholder path
-        val audioCursor = contentResolver.query(
-            musicUri,
-            projection,
-            "${MediaStore.Audio.Media.RELATIVE_PATH} LIKE ?",
-            arrayOf("%Music%"),
-            null
-        ) ?: return emptyList()
-
-        audioCursor.use { cursor ->
-            val idColumn = cursor.getColumnIndex(MediaStore.Audio.AudioColumns._ID)
-            val relativePathColumn = cursor.getColumnIndex(MediaStore.Audio.AudioColumns.RELATIVE_PATH)
-            val albumIdColumn = cursor.getColumnIndex(MediaStore.Audio.AudioColumns.ALBUM_ID)
-            val displayNameColumn = cursor.getColumnIndex(MediaStore.Audio.AudioColumns.DISPLAY_NAME)
-            val dateModifiedColumn = cursor.getColumnIndex(MediaStore.Audio.Media.DATE_MODIFIED)
-            val sizeColumn = cursor.getColumnIndex(MediaStore.Audio.Media.SIZE)
-
-            cursor.apply {
-                println(count)
-                if (count == 0) Log.d("Cursor", "get cursor data: Cursor is empty.")
-                else {
-                    while (cursor.moveToNext()) {
-                        try {
-                            val iD = cursor.getLong(idColumn)
-                            val path = cursor.getString(relativePathColumn) + cursor.getString(displayNameColumn)
-                            val albumId = cursor.getLong(albumIdColumn)
-                            val dateModified = cursor.getLong(dateModifiedColumn) * 1000L //s -> ms
-                            val size = cursor.getLong(sizeColumn)
-
-                            val song = getSongDetailsTagLib(iD, albumId, path, dateModified, size)
-
-                            if (song != null) audioList += song
-                        } catch (e: Exception) {
-                            Log.e("Cursor read", "ERR", e)
+                setContent {
+                    SonataTheme {
+                        Surface(
+                            modifier = Modifier.fillMaxSize(),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            SonataApp(
+                                navController = rememberNavController(),
+                                viewModel = viewModel
+                            )
                         }
+
                     }
                 }
             }
         }
-        return audioList
     }
 
-    fun getSongDetailsTagLib(id: Long, albumId: Long, path: String, dateModified: Long, size: Long): Song? {
-        val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
-        contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
-            val fd = pfd.detachFd()
-
-            val prop = TagLib.getAudioProperties(fd)
-            val metadata = TagLib.getMetadata(fd)
-
-            //be as faithful to the tags as possible.
-            val artists = metadata["ARTIST"] ?: emptyArray()
-            val title = metadata["TITLE"]?.firstOrNull()?.takeIf { it.isNotBlank() } ?: ""
-            val album = metadata["ALBUM"]?.firstOrNull()?.takeIf { it.isNotBlank() } ?: ""
-            val date = metadata["DATE"]?.firstOrNull()?.takeIf { it.isNotBlank() }
-                ?: metadata["YEAR"]?.firstOrNull()?.takeIf { it.isNotBlank() } ?: ""
-            val albumArtist = metadata["ALBUMARTIST"]?.firstOrNull()?.takeIf { it.isNotBlank() }
-                ?: metadata["ALBUM ARTIST"]?.firstOrNull()?.takeIf { it.isNotBlank() } ?: ""
-            val trackString = (metadata["TRACKNUMBER"]?.firstOrNull()?.takeIf { it.isNotBlank() }
-                ?: metadata["TRACK"]?.firstOrNull()?.takeIf { it.isNotBlank() }) ?: ""
-            val discString = (metadata["DISCNUMBER"]?.firstOrNull()?.takeIf { it.isNotBlank() }
-                ?: metadata["TPOS"]?.firstOrNull()?.takeIf { it.isNotBlank() }) ?: ""
-
-            val duration = prop[0].toLong()
-            val bitrate = prop[1]
-            val sampleRate = prop[2]
-            val channels = prop[3]
-            val bitsPerSample = prop[4]
-
-            return Song(
-                iD = id,
-                albumId = albumId,
-                artists = artists,
-                title = title,
-                album = album,
-                date = date,
-                albumArtist = albumArtist,
-                track = trackString,
-                disc = discString,
-                bitrate = bitrate,
-                sampleRate = sampleRate,
-                channels = channels,
-                bitsPerSample = bitsPerSample,
-                duration = duration,
-
-                dateModified = dateModified,
-                size = size,
-                path = path
-            )
-        }
-        return null
+    fun SongEntity.toUiModel(): Song {
+        return Song(
+            iD = this.mediaStoreId,
+            albumId = this.mediaStoreAlbumId,
+            artists = this.artists,
+            title = this.title,
+            album = this.album,
+            date = this.date,
+            albumArtist = this.albumArtist,
+            track = this.track,
+            disc = this.disc,
+            bitrate = this.bitrate,
+            sampleRate = this.sampleRate,
+            channels = this.channels,
+            bitsPerSample = this.bitsPerSample,
+            duration = this.duration,
+            dateModified = this.dateModified,
+            size = this.size,
+            path = this.path
+        )
     }
 }

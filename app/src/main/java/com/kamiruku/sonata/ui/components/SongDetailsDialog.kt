@@ -23,6 +23,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -32,6 +37,9 @@ import com.kamiruku.sonata.FileNode
 import com.kamiruku.sonata.Song
 import com.kamiruku.sonata.taglib.TagLib
 import com.kamiruku.sonata.utils.toTime
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -45,12 +53,20 @@ fun SongDetailsDialog(
     val song = file.song ?: return
 
     val context = LocalContext.current
-    var metadata: Map<String, Array<String>>? = null
+    var metadata by remember { mutableStateOf<Map<String, Array<String>>?>(null) }
 
-    val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, song.iD)
-    context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd->
-        val fd = pfd.detachFd()
-        metadata = TagLib.getMetadata(fd).filter { it.value.isNotEmpty() }
+    LaunchedEffect(song.iD) {
+        launch(Dispatchers.IO) {
+            val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, song.iD)
+            context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
+                val fd = pfd.detachFd()
+
+                val rawMetadata = TagLib.getMetadata(fd)
+                withContext(Dispatchers.Main) {
+                    metadata = rawMetadata.filter { it.value.isNotEmpty() }
+                }
+            }
+        }
     }
 
     val preferredTags = listOf(

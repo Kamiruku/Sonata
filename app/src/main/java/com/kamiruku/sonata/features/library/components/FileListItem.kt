@@ -94,7 +94,7 @@ fun FileListItem(
                     )
                     "${ext?.uppercase()} | ${node.song?.duration?.toTime()}"
                 } else {
-                    "\uD834\uDD1E ${node.musicTotal} | ${node.durationTotal.toTime()}"
+                    "${node.musicTotal} | ${node.durationTotal.toTime()}"
                 }
             }
             Text(
