@@ -8,6 +8,11 @@
 #include "tpropertymap.h"
 #include "wav/wavproperties.h"
 #include "flacproperties.h"
+#include "mpegfile.h"
+#include "flacfile.h"
+#include "riff/wav/wavfile.h"
+#include "dsffile.h"
+#include "dsdifffile.h"
 
 jclass g_stringClass = nullptr;
 
@@ -65,6 +70,34 @@ jobject propertyMapToHashMap(JNIEnv *env, const TagLib::PropertyMap &propertyMap
     return map;
 }
 
+TagLib::File* createByExtension(const TagLib::String &fileName,
+                                TagLib::IOStream *stream,
+                                bool readProps = true,
+                                TagLib::AudioProperties::ReadStyle style = TagLib::AudioProperties::Average)
+{
+    int dot = fileName.rfind(".");
+    if(dot < 0) return nullptr;
+
+    auto ext = fileName.substr(dot + 1).upper();
+
+    if(ext == "MP3")
+        return new TagLib::MPEG::File(stream, readProps, style);
+
+    if(ext == "FLAC")
+        return new TagLib::FLAC::File(stream, readProps, style);
+
+    if(ext == "WAV")
+        return new TagLib::RIFF::WAV::File(stream, readProps, style);
+
+    if(ext == "DSF")
+        return new TagLib::DSF::File(stream, readProps, style);
+
+    if(ext == "DFF" || ext == "DSDIFF")
+        return new TagLib::DSDIFF::File(stream, readProps, style);
+
+    return nullptr;
+}
+
 extern "C"
 JNIEXPORT void JNI_OnUnload(JavaVM *vm, void *) {
     JNIEnv *env;
@@ -77,10 +110,17 @@ JNIEXPORT void JNI_OnUnload(JavaVM *vm, void *) {
 
 extern "C"
 JNIEXPORT jobject JNICALL
-Java_com_kamiruku_sonata_taglib_TagLib_getMetadata(JNIEnv *env,jobject thiz,jint fd) {
+Java_com_kamiruku_sonata_taglib_TagLib_getMetadata(JNIEnv *env,jobject thiz, jint fd, jstring jfileName) {
+    const char *cFilename = env->GetStringUTFChars(jfileName, nullptr);
+    TagLib::String filename(cFilename);
+    env->ReleaseStringUTFChars(jfileName, cFilename);
+
     fd = dup(fd);
+    lseek(fd, 0, SEEK_SET);
+
     auto stream = std::make_unique<TagLib::FileStream>(fd, true);
-    TagLib::FileRef file(stream.get(), true);
+    TagLib::File *f = createByExtension(filename, stream.get());
+    TagLib::FileRef file(f);
 
     jobject propertiesMap = propertyMapToHashMap(env, file.properties());
     return propertiesMap;
@@ -88,10 +128,17 @@ Java_com_kamiruku_sonata_taglib_TagLib_getMetadata(JNIEnv *env,jobject thiz,jint
 
 extern "C"
 JNIEXPORT jintArray JNICALL
-Java_com_kamiruku_sonata_taglib_TagLib_getAudioProperties(JNIEnv* env,jobject thiz, jint fd) {
+Java_com_kamiruku_sonata_taglib_TagLib_getAudioProperties(JNIEnv* env,jobject thiz, jint fd, jstring jfilename) {
+    const char *cFilename = env->GetStringUTFChars(jfilename, nullptr);
+    TagLib::String filename(cFilename);
+    env->ReleaseStringUTFChars(jfilename, cFilename);
+
     fd = dup(fd);
+    lseek(fd, 0, SEEK_SET);
+
     auto stream = std::make_unique<TagLib::FileStream>(fd, true);
-    TagLib::FileRef file(stream.get(), true);
+    TagLib::File *f = createByExtension(filename, stream.get());
+    TagLib::FileRef file(f);
 
     jint values[5] = {-1, -1, -1, -1, -1};
 

@@ -61,7 +61,7 @@ fun SongDetailsDialog(
             context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
                 val fd = pfd.detachFd()
 
-                val rawMetadata = TagLib.getMetadata(fd)
+                val rawMetadata = TagLib.getMetadata(fd, song.path)
                 withContext(Dispatchers.Main) {
                     metadata = rawMetadata.filter { it.value.isNotEmpty() }
                 }

@@ -33,6 +33,7 @@ class MediaStoreSource(private val contentResolver: ContentResolver) {
         }
         Log.d("SongSync", "TagLib has gotten ${newSongs.size} details.")
         if (newSongs.isNotEmpty()) repository.insertSongs(newSongs)
+        Log.d("SongSync", "${newSongs.size} songs has been added to the db")
     }
 
     fun getMediaStoreFiles(): List<MediaStoreFile> {
@@ -92,8 +93,8 @@ class MediaStoreSource(private val contentResolver: ContentResolver) {
         contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
             val fd = pfd.detachFd()
 
-            val prop = TagLib.getAudioProperties(fd)
-            val metadata = TagLib.getMetadata(fd)
+            val prop = TagLib.getAudioProperties(fd, fileName)
+            val metadata = TagLib.getMetadata(fd, fileName)
 
             //be as faithful to the tags as possible.
             val artists = metadata["ARTIST"] ?: emptyArray()
