@@ -36,6 +36,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.kamiruku.sonata.FileNode
 import com.kamiruku.sonata.Song
 import com.kamiruku.sonata.taglib.TagLib
+import com.kamiruku.sonata.taglib.TagLibObject
 import com.kamiruku.sonata.utils.toTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -53,37 +54,37 @@ fun SongDetailsDialog(
     val song = file.song ?: return
 
     val context = LocalContext.current
-    var metadata by remember { mutableStateOf<Map<String, Array<String>>?>(null) }
+    var audioDetails by remember { mutableStateOf<TagLibObject?>(null) }
 
     LaunchedEffect(song.iD) {
-        launch(Dispatchers.IO) {
-            val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, song.iD)
+        audioDetails = null
+        val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, song.iD)
+        val details = withContext(Dispatchers.IO) {
             context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
                 val fd = pfd.detachFd()
-
-                val rawMetadata = TagLib.getMetadata(fd, song.path)
-                withContext(Dispatchers.Main) {
-                    metadata = rawMetadata.filter { it.value.isNotEmpty() }
-                }
+                TagLib.getDetails(fd, song.path)
             }
         }
+        audioDetails = details
     }
 
-    val preferredTags = listOf(
-        "Artist" to listOf("ARTIST"),
-        "Title" to listOf("TITLE"),
-        "Album" to listOf("ALBUM"),
-        "Date" to listOf("DATE", "YEAR"),
-        "Genre" to listOf("GENRE"),
-        "Composer" to listOf("COMPOSER"),
-        "Performer" to listOf("PERFORMER"),
-        "Album Artist" to listOf("ALBUMARTIST", "ALBUM ARTIST"),
-        "Track" to listOf("TRACKNUMBER", "TRACK"),
-        "Total Tracks" to listOf("TRACKTOTAL", "TOTALTRACKS", "TRACKCOUNT"),
-        "Disc" to listOf("DISCNUMBER", "DISC"),
-        "Total Discs" to listOf("DISCTOTAL", "TOTALDISCS"),
-        "Comment" to listOf("COMMENT")
-    )
+    val preferredTags = remember {
+        listOf(
+            "Artist" to listOf("ARTIST"),
+            "Title" to listOf("TITLE"),
+            "Album" to listOf("ALBUM"),
+            "Date" to listOf("DATE", "YEAR"),
+            "Genre" to listOf("GENRE"),
+            "Composer" to listOf("COMPOSER"),
+            "Performer" to listOf("PERFORMER"),
+            "Album Artist" to listOf("ALBUMARTIST", "ALBUM ARTIST"),
+            "Track" to listOf("TRACKNUMBER", "TRACK"),
+            "Total Tracks" to listOf("TRACKTOTAL", "TOTALTRACKS", "TRACKCOUNT"),
+            "Disc" to listOf("DISCNUMBER", "DISC"),
+            "Total Discs" to listOf("DISCTOTAL", "TOTALDISCS"),
+            "Comment" to listOf("COMMENT")
+        )
+    }
 
     Dialog(
         onDismissRequest = { onDismiss() },
@@ -120,14 +121,24 @@ fun SongDetailsDialog(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    ShowGeneral(song)
+                    ShowGeneral(
+                        duration = audioDetails?.lengthInMilliseconds?.toLong() ?: -1L,
+                        sampleRate = audioDetails?.sampleRate ?: -1,
+                        channels = audioDetails?.channels ?: -1,
+                        bitsPerSample = audioDetails?.bitsPerSample ?: -1,
+                        bitrate = audioDetails?.bitrate ?: -1
+                    )
 
                     Spacer(modifier = Modifier.height(8.dp))
 
                     val priorityTags = mutableListOf<Pair<String, Array<String>>>()
-                    var lessImportant: MutableMap<String, Array<String>> = metadata?.toMutableMap() ?: mutableMapOf()
+                    val lessImportant: MutableMap<String, Array<String>> =
+                        audioDetails?.propertyMap
+                            ?.toSortedMap(String.CASE_INSENSITIVE_ORDER)
+                            ?.toMutableMap()
+                            ?: mutableMapOf()
 
-                    metadata?.also { map ->
+                    audioDetails?.propertyMap?.also { map ->
                         for ((label, keys) in preferredTags) {
                             val keyFound = keys.firstOrNull { it in map } ?: continue
                             val value = map[keyFound]
@@ -137,7 +148,6 @@ fun SongDetailsDialog(
                             }
                         }
                     }
-                    lessImportant = lessImportant.toSortedMap(String.CASE_INSENSITIVE_ORDER)
 
                     ShowMetadata(priorityTags, lessImportant)
 
@@ -161,17 +171,17 @@ fun ShowLocation(song: Song) {
 }
 
 @Composable
-fun ShowGeneral(song: Song) {
+fun ShowGeneral(duration: Long, sampleRate: Int, channels: Int, bitsPerSample: Int, bitrate: Int) {
     Text(
         text = "General",
         style = MaterialTheme.typography.titleMedium,
         color = MaterialTheme.colorScheme.primary
     )
-    ShowLabel("Duration", "${song.duration.toTime()} (${song.duration / 1000} s)")
-    ShowLabel("Sample rate", "${song.sampleRate} Hz")
-    ShowLabel("Channels", "${song.channels}")
-    ShowLabel("Bits per sample", "${song.bitsPerSample}")
-    ShowLabel("Bitrate", "${song.bitrate} kbps")
+    if (duration != -1L) ShowLabel("Duration", "${duration.toTime()} (${duration / 1000} s)")
+    if (sampleRate != -1) ShowLabel("Sample rate", "${sampleRate} Hz")
+    if (channels != -1)ShowLabel("Channels", "${channels}")
+    if (bitsPerSample != -1)ShowLabel("Bits per sample", "${bitsPerSample}")
+    if (bitrate != -1)ShowLabel("Bitrate", "${bitrate} kbps")
 }
 
 @Composable

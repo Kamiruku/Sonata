@@ -20,6 +20,9 @@ jclass g_hashMapClass = nullptr;
 jmethodID g_hashMapInit = nullptr;
 jmethodID g_hashMapPut = nullptr;
 
+jclass g_tagLibObjectClass = nullptr;
+jmethodID g_tagLibObjectCtor = nullptr;
+
 extern "C"
 JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *) {
     JNIEnv *env;
@@ -35,10 +38,15 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *) {
 
     g_stringClass = cacheClass("java/lang/String");
     g_hashMapClass = cacheClass("java/util/HashMap");
+    g_tagLibObjectClass = cacheClass("com/kamiruku/sonata/taglib/TagLibObject");
 
     g_hashMapInit = env->GetMethodID(g_hashMapClass, "<init>", "(I)V");
     g_hashMapPut = env->GetMethodID(g_hashMapClass, "put",
                                     "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+    g_tagLibObjectCtor = env->GetMethodID(
+            g_tagLibObjectClass,
+            "<init>",
+            "(IIIIILjava/util/HashMap;)V");
 
     return JNI_VERSION_1_6;
 }
@@ -106,6 +114,60 @@ JNIEXPORT void JNI_OnUnload(JavaVM *vm, void *) {
 
     env->DeleteGlobalRef(g_stringClass);
     env->DeleteGlobalRef(g_hashMapClass);
+    env->DeleteGlobalRef(g_tagLibObjectClass);
+}
+
+extern "C"
+JNIEXPORT jobject JNICALL
+Java_com_kamiruku_sonata_taglib_TagLib_getDetails(JNIEnv *env, jobject thiz, jint fd, jstring jfileName) {
+    const char *cFileName = env->GetStringUTFChars(jfileName, nullptr);
+    TagLib::String filename(cFileName);
+    env->ReleaseStringUTFChars(jfileName, cFileName);
+
+    lseek(fd, 0, SEEK_SET);
+
+    auto stream = std::make_unique<TagLib::FileStream>(fd, true);
+    TagLib::File *f = createByExtension(filename, stream.get());
+    TagLib::FileRef file(f);
+
+    if (!file.isNull()) {
+        auto props = file.audioProperties();
+        jint length = -1, bitrate = -1, sampleRate = -1, channels = -1, bitsPerSample = -1;
+
+        if (props) {
+            length = props->lengthInMilliseconds();
+            bitrate = props->bitrate();
+            sampleRate = props->sampleRate();
+            channels = props->channels();
+
+            if (auto *wav = dynamic_cast<TagLib::RIFF::WAV::Properties*>(props)) {
+                bitsPerSample = wav->bitsPerSample();
+            } else if (auto *flac = dynamic_cast<TagLib::FLAC::Properties*>(props)) {
+                bitsPerSample = flac->bitsPerSample();
+            } else if (auto *dsd = dynamic_cast<TagLib::DSDIFF::Properties*>(props)) {
+                bitsPerSample = dsd->bitsPerSample();
+            } else if (auto *dsf = dynamic_cast<TagLib::DSF::Properties*>(props)) {
+                bitsPerSample = dsf->bitsPerSample();
+            }
+        }
+
+        jobject propertyMap = propertyMapToHashMap(env, file.properties());
+
+        jobject tagLibObj = env->NewObject(
+                g_tagLibObjectClass,
+                g_tagLibObjectCtor,
+                length,
+                bitrate,
+                sampleRate,
+                channels,
+                bitsPerSample,
+                propertyMap
+        );
+
+        env->DeleteLocalRef(propertyMap);
+        return tagLibObj;
+    }
+    return nullptr;
 }
 
 extern "C"

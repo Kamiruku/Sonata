@@ -2,6 +2,7 @@ package com.kamiruku.sonata
 
 import android.content.ContentResolver
 import android.content.ContentUris
+import android.nfc.Tag
 import android.provider.MediaStore
 import android.util.Log
 import com.kamiruku.sonata.db.SongEntity
@@ -93,8 +94,8 @@ class MediaStoreSource(private val contentResolver: ContentResolver) {
         contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
             val fd = pfd.detachFd()
 
-            val prop = TagLib.getAudioProperties(fd, fileName)
-            val metadata = TagLib.getMetadata(fd, fileName)
+            val audioDetails = TagLib.getDetails(fd, fileName)
+            val metadata = audioDetails.propertyMap
 
             //be as faithful to the tags as possible.
             val artists = metadata["ARTIST"] ?: emptyArray()
@@ -109,11 +110,11 @@ class MediaStoreSource(private val contentResolver: ContentResolver) {
             val discString = (metadata["DISCNUMBER"]?.firstOrNull()?.takeIf { it.isNotBlank() }
                 ?: metadata["TPOS"]?.firstOrNull()?.takeIf { it.isNotBlank() }) ?: ""
 
-            val duration = prop[0].toLong()
-            val bitrate = prop[1]
-            val sampleRate = prop[2]
-            val channels = prop[3]
-            val bitsPerSample = prop[4]
+            val duration = audioDetails.lengthInMilliseconds.toLong()
+            val bitrate = audioDetails.bitrate
+            val sampleRate = audioDetails.sampleRate
+            val channels = audioDetails.channels
+            val bitsPerSample = audioDetails.bitsPerSample
 
             return SongEntity(
                 mediaStoreId = id,

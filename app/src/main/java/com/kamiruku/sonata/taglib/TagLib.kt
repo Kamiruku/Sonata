@@ -6,4 +6,6 @@ object TagLib {
     external fun getMetadata(fd: Int, fileName: String): HashMap<String, Array<String>>
 
     external fun getAudioProperties(fd: Int, fileName: String): IntArray
+
+    external fun getDetails(fd: Int, fileName: String): TagLibObject
 }
