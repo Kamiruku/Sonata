@@ -54,7 +54,7 @@ fun BottomNavBar(navController: NavHostController) {
         )
 
         NavigationBarItem(
-            selected = currentRoute == SonataRoute.Settings.route,
+            selected = currentRoute?.startsWith(SonataRoute.Settings.route) == true,
             onClick = { navController.navigate(SonataRoute.Settings.route) },
             icon = { Text("Set") }
         )

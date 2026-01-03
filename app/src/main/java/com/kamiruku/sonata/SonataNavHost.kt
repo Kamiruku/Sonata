@@ -2,6 +2,8 @@ package com.kamiruku.sonata
 
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,9 +29,34 @@ fun SonataNavHost(
     viewModel: SharedViewModel,
     onScrollDirectionChanged: (Boolean) -> Unit
 ) {
-    val root = viewModel.getRootNode() ?: return
-    val songList = viewModel.getSongList()
-    if (songList.isEmpty()) return
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState) {
+        val currentRoute = navController.currentBackStackEntry?.destination?.route
+
+        when (uiState) {
+            LibraryUIState.Loading -> { }
+
+            LibraryUIState.Empty -> {
+                if (currentRoute != SonataRoute.Settings.route)
+                    navController.navigate(SonataRoute.Settings.route)
+            }
+            LibraryUIState.Ready -> {
+                if (currentRoute != SonataRoute.Library.route)
+                    navController.navigate(SonataRoute.Library.route)
+            }
+        }
+    }
+
+    val root = remember(uiState) {
+        if (uiState == LibraryUIState.Ready) viewModel.getRootNode()
+        else null
+    }
+
+    val songList = remember(uiState) {
+        if (uiState == LibraryUIState.Ready) viewModel.getSongList()
+        else emptyList()
+    }
 
     var selectedFile by remember { mutableStateOf<FileNode?>(null) }
 
@@ -62,12 +89,14 @@ fun SonataNavHost(
             }
 
             composable(SonataRoute.FolderRoot.route) {
-                FileRootScreen(
-                    node = root,
-                    onOpen = { node ->
-                        navController.navigate(SonataRoute.Folder.create(node.sortId))
-                    }
-                )
+                root?.let {
+                    FileRootScreen(
+                        node = root,
+                        onOpen = { node ->
+                            navController.navigate(SonataRoute.Folder.create(node.sortId))
+                        }
+                    )
+                }
             }
 
             composable(

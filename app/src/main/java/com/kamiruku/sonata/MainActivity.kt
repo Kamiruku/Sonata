@@ -3,7 +3,6 @@ package com.kamiruku.sonata
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -43,6 +42,21 @@ class MainActivity : FragmentActivity() {
         }
 
         checkPermission()
+
+        setContent {
+            SonataTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    SonataApp(
+                        navController = rememberNavController(),
+                        viewModel = viewModel
+                    )
+                }
+
+            }
+        }
     }
 
     fun checkPermission() {
@@ -70,21 +84,6 @@ class MainActivity : FragmentActivity() {
 
             withContext(Dispatchers.Main) {
                 viewModel.setList(rootNode)
-
-                setContent {
-                    SonataTheme {
-                        Surface(
-                            modifier = Modifier.fillMaxSize(),
-                            color = MaterialTheme.colorScheme.surface
-                        ) {
-                            SonataApp(
-                                navController = rememberNavController(),
-                                viewModel = viewModel
-                            )
-                        }
-
-                    }
-                }
             }
         }
     }

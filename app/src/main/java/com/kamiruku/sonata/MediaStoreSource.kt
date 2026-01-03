@@ -7,9 +7,10 @@ import android.util.Log
 import com.kamiruku.sonata.db.SongEntity
 import com.kamiruku.sonata.db.SongRepository
 import com.kamiruku.sonata.taglib.TagLib
+import com.kamiruku.sonata.taglib.TagLibObject
 
 class MediaStoreSource(private val contentResolver: ContentResolver) {
-    suspend fun syncLibrary(repository: SongRepository) {
+    suspend fun syncLibrary(repository: SongRepository): Boolean {
         val mediaStoreFiles = getMediaStoreFiles()
 
         Log.d("SongSync", "Found ${mediaStoreFiles.size} songs in MediaStore")
@@ -34,8 +35,12 @@ class MediaStoreSource(private val contentResolver: ContentResolver) {
             )
         }
         Log.d("SongSync", "TagLib has gotten ${newSongs.size} details.")
-        if (newSongs.isNotEmpty()) repository.insertSongs(newSongs)
-        Log.d("SongSync", "${newSongs.size} songs has been added to the db")
+        if (newSongs.isNotEmpty()) {
+            repository.insertSongs(newSongs)
+            Log.d("SongSync", "${newSongs.size} songs has been added to the db")
+            return true
+        }
+        return false
     }
 
     fun getMediaStoreFiles(): List<MediaStoreFile> {
@@ -96,6 +101,7 @@ class MediaStoreSource(private val contentResolver: ContentResolver) {
             val fd = pfd.detachFd()
 
             val audioDetails = TagLib.getDetails(fd, fileName)
+                ?: TagLibObject(-1,-1,-1,-1, -1, HashMap())
             val metadata = audioDetails.propertyMap
 
             //be as faithful to the tags as possible.

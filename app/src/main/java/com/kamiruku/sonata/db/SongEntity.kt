@@ -7,7 +7,12 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "songs",
-    indices = [Index("path"), Index("title"), Index("album")]
+    indices = [
+        Index("path", unique = true),
+        Index("title"),
+        Index("album"),
+        Index(value = ["path", "date_modified"])
+    ]
 )
 data class SongEntity(
     //mediastore id
