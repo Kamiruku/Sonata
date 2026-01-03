@@ -2,7 +2,6 @@ package com.kamiruku.sonata
 
 import android.content.ContentResolver
 import android.content.ContentUris
-import android.nfc.Tag
 import android.provider.MediaStore
 import android.util.Log
 import com.kamiruku.sonata.db.SongEntity
@@ -16,8 +15,10 @@ class MediaStoreSource(private val contentResolver: ContentResolver) {
         Log.d("SongSync", "Found ${mediaStoreFiles.size} songs in MediaStore")
         Log.d("SongSync", "DB has ${repository.getSongCount()} songs")
 
+        val existingFiles = repository.getDatePathMap()
         val newFiles = mediaStoreFiles.filter { file ->
-            !repository.songExists(file.path, file.dateModified)
+            val knownDate = existingFiles[file.path]
+            knownDate == null || knownDate != file.dateModified
         }
 
         Log.d("SongSync", "Found ${newFiles.size} new songs, getting details from TagLib")

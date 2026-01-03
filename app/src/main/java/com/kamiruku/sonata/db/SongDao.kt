@@ -22,11 +22,11 @@ interface SongDao {
     @Query("SELECT * FROM songs WHERE artists LIKE :artist")
     fun getSongsByArtist(artist: String): List<SongEntity>
 
-    @Query("SELECT * FROM songs WHERE path = :path AND date_modified = :dateModified LIMIT 1")
-    fun getSongByPathAndDate(path: String, dateModified: Long): SongEntity?
-
     @Query("SELECT COUNT(*) FROM songs")
     fun getSongCount(): Int
+
+    @Query("SELECT path, date_modified AS dateModified FROM songs")
+    suspend fun getPathAndDateModified(): List<PathDate>
 
     @Upsert
     fun upsertAll(songs: List<SongEntity>)
