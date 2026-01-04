@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun LibraryScreen(
+    buttonEnabled: Boolean,
     onAllSongsClick: () -> Unit,
     onFolderClick: () -> Unit
 ) {
@@ -36,7 +37,10 @@ fun LibraryScreen(
                 text = "All Songs",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onAllSongsClick() }
+                    .clickable(
+                        enabled = buttonEnabled,
+                        onClick = { onAllSongsClick() }
+                    )
                     .padding(vertical = 22.dp),
                 fontSize = 18.sp
             )
@@ -47,7 +51,10 @@ fun LibraryScreen(
                 text = "Folders Hierarchy",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onFolderClick() }
+                    .clickable(
+                        enabled = buttonEnabled,
+                        onClick = { onFolderClick() }
+                    )
                     .padding(vertical = 22.dp),
                 fontSize = 18.sp
             )

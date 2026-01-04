@@ -21,4 +21,10 @@ class SongRepository(context: Context) {
         return songDao.getPathAndDateModified()
             .associate { it.path to it.dateModified }
     }
+
+    suspend fun deleteByPaths(paths: Collection<String>) {
+        if (paths.isNotEmpty()) {
+            songDao.deleteByPaths(paths.toList())
+        }
+    }
 }

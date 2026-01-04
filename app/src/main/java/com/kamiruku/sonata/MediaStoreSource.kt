@@ -38,9 +38,16 @@ class MediaStoreSource(private val contentResolver: ContentResolver) {
         if (newSongs.isNotEmpty()) {
             repository.insertSongs(newSongs)
             Log.d("SongSync", "${newSongs.size} songs has been added to the db")
-            return true
         }
-        return false
+
+        val mediaStorePaths = mediaStoreFiles.map { it.path }.toSet()
+        val deletedPaths = existingFiles.keys - mediaStorePaths
+        if (deletedPaths.isNotEmpty()) {
+            repository.deleteByPaths(deletedPaths)
+            Log.d("SongSync", "${deletedPaths.size} songs has been removed from the db")
+        }
+
+        return newSongs.isNotEmpty() || deletedPaths.isNotEmpty()
     }
 
     fun getMediaStoreFiles(): List<MediaStoreFile> {

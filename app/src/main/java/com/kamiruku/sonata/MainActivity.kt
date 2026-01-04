@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.compose.rememberNavController
 import com.kamiruku.sonata.db.SongEntity
 import com.kamiruku.sonata.db.SongRepository
@@ -73,7 +74,7 @@ class MainActivity : FragmentActivity() {
 
     private fun loadMusic() {
         lifecycleScope.launch(Dispatchers.IO) {
-            val repository = SongRepository(this@MainActivity)
+            val repository = SongRepository(this@MainActivity.applicationContext)
             val mediaStoreSource = MediaStoreSource(contentResolver)
 
             mediaStoreSource.syncLibrary(repository)

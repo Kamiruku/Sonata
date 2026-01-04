@@ -1,5 +1,7 @@
 package com.kamiruku.sonata
 
+import android.content.ContentUris
+import android.provider.MediaStore
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -8,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.media3.common.MediaItem
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -30,6 +33,7 @@ fun SonataNavHost(
     onScrollDirectionChanged: (Boolean) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val buttonEnabled = uiState == LibraryUIState.Ready
 
     LaunchedEffect(uiState) {
         val currentRoute = navController.currentBackStackEntry?.destination?.route
@@ -70,6 +74,7 @@ fun SonataNavHost(
         ) {
             composable(SonataRoute.LibraryHome.route) {
                 LibraryScreen(
+                    buttonEnabled = buttonEnabled,
                     onAllSongsClick = { navController.navigate(SonataRoute.AllSongs.route) },
                     onFolderClick = { navController.navigate(SonataRoute.FolderRoot.route) }
                 )

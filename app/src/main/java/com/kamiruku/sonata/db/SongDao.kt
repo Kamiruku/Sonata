@@ -8,29 +8,32 @@ import androidx.room.Upsert
 @Dao
 interface SongDao {
     @Query("SELECT * FROM songs")
-    fun getAllSongs(): List<SongEntity>
+    suspend fun getAllSongs(): List<SongEntity>
 
     @Query("SELECT * FROM songs WHERE path = :path LIMIT 1")
-    fun getSong(path: String): SongEntity?
+    suspend fun getSong(path: String): SongEntity?
 
     @Query("SELECT * FROM songs WHERE title LIKE :query")
-    fun searchByTitle(query: String): List<SongEntity>
+    suspend fun searchByTitle(query: String): List<SongEntity>
 
     @Query("SELECT * FROM songs WHERE album = :album")
-    fun getSongsByAlbum(album: String): List<SongEntity>
+    suspend fun getSongsByAlbum(album: String): List<SongEntity>
 
     @Query("SELECT * FROM songs WHERE artists LIKE :artist")
-    fun getSongsByArtist(artist: String): List<SongEntity>
+    suspend fun getSongsByArtist(artist: String): List<SongEntity>
 
     @Query("SELECT COUNT(*) FROM songs")
-    fun getSongCount(): Int
+    suspend fun getSongCount(): Int
 
     @Query("SELECT path, date_modified AS dateModified FROM songs")
     suspend fun getPathAndDateModified(): List<PathDate>
 
+    @Query("DELETE FROM songs WHERE path IN (:paths)")
+    suspend fun deleteByPaths(paths: List<String>)
+
     @Upsert
-    fun upsertAll(songs: List<SongEntity>)
+    suspend fun upsertAll(songs: List<SongEntity>)
 
     @Delete
-    fun delete(song: SongEntity)
+    suspend fun delete(song: SongEntity)
 }
