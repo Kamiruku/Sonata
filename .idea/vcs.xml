@@ -2,8 +2,8 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/app/src/main/cpp/taglib" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/app/src/main/cpp/taglib/3rdparty/utfcpp" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/app/src/main/cpp/taglib/3rdparty/utfcpp/extern/ftest" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/src/main/cpp/taglib_dir/taglib" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/src/main/cpp/taglib_dir/taglib/3rdparty/utfcpp" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/src/main/cpp/taglib_dir/taglib/3rdparty/utfcpp/extern/ftest" vcs="Git" />
   </component>
 </project>
