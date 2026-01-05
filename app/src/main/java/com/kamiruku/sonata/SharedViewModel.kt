@@ -6,30 +6,26 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class SharedViewModel(): ViewModel() {
-    private var rootNode: FileNode? = null
+    private val _rootNode = MutableStateFlow<FileNode?>(null)
+    val rootNode: StateFlow<FileNode?> = _rootNode
+
+    private val _songList = MutableStateFlow<List<FileNode>>(emptyList())
+    val songList: StateFlow<List<FileNode>> = _songList
+
     private val nodeIndex = mutableMapOf<Int, FileNode>()
-    private var songList: List<FileNode>? = null
 
     private val _uiState = MutableStateFlow<LibraryUIState>(LibraryUIState.Loading)
     val uiState: StateFlow<LibraryUIState> = _uiState.asStateFlow()
 
     fun setList(rootNode: FileNode) {
-        this@SharedViewModel.rootNode = rootNode
+        _rootNode.value = rootNode
         nodeIndex.clear()
         buildIndex(rootNode)
-        songList = rootNode.flattenSongs()
+        _songList.value = rootNode.flattenSongs()
 
         _uiState.value =
-            if (songList?.isEmpty() == true) LibraryUIState.Empty
+            if (songList.value.isEmpty()) LibraryUIState.Empty
             else LibraryUIState.Ready
-    }
-
-    fun getRootNode(): FileNode? {
-        return rootNode
-    }
-
-    fun getSongList(): List<FileNode> {
-        return songList ?: listOf()
     }
 
     private fun buildIndex(node: FileNode) {

@@ -35,38 +35,27 @@ fun SonataNavHost(
     val uiState by viewModel.uiState.collectAsState()
     val buttonEnabled = uiState == LibraryUIState.Ready
 
-    LaunchedEffect(uiState) {
-        val currentRoute = navController.currentBackStackEntry?.destination?.route
+    val root by viewModel.rootNode.collectAsState()
 
-        when (uiState) {
-            LibraryUIState.Loading -> { }
-
-            LibraryUIState.Empty -> {
-                if (currentRoute != SonataRoute.Settings.route)
-                    navController.navigate(SonataRoute.Settings.route)
-            }
-            LibraryUIState.Ready -> {
-                if (currentRoute != SonataRoute.Library.route)
-                    navController.navigate(SonataRoute.Library.route)
-            }
-        }
-    }
-
-    val root = remember(uiState) {
-        if (uiState == LibraryUIState.Ready) viewModel.getRootNode()
-        else null
-    }
-
-    val songList = remember(uiState) {
-        if (uiState == LibraryUIState.Ready) viewModel.getSongList()
-        else emptyList()
-    }
+    val songList by viewModel.songList.collectAsState()
 
     var selectedFile by remember { mutableStateOf<FileNode?>(null) }
 
+    /*
+    loading screen is library screen...
+    for now, because there's minimal time it's actually active if
+    there is no need to update db
+    still want it to be accessible even when updating songs
+     */
+    val startDestination = when (uiState) {
+        LibraryUIState.Empty -> SonataRoute.Settings.route
+        LibraryUIState.Ready -> SonataRoute.Library.route
+        LibraryUIState.Loading -> SonataRoute.Library.route
+    }
+
     NavHost(
         navController = navController,
-        startDestination = SonataRoute.Library.route
+        startDestination = startDestination
     ) {
         navigation(
             route = SonataRoute.Library.route,
@@ -96,7 +85,7 @@ fun SonataNavHost(
             composable(SonataRoute.FolderRoot.route) {
                 root?.let {
                     FileRootScreen(
-                        node = root,
+                        node = it,
                         onOpen = { node ->
                             navController.navigate(SonataRoute.Folder.create(node.sortId))
                         }
