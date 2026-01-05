@@ -140,6 +140,7 @@ fun SonataNavHost(
         ) {
             composable(route = SonataRoute.SettingsHome.route) {
                 SettingsScreen(
+                    songList.isNotEmpty(),
                     onGeneralClick = { navController.navigate(SonataRoute.SettingsGeneral.route) },
                     onLibraryClick = { navController.navigate(SonataRoute.SettingsLibrary.route) },
                     onAudioClick = { navController.navigate(SonataRoute.SettingsAudio.route) },
