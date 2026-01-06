@@ -37,7 +37,6 @@ fun BottomNavBar(navController: NavHostController) {
             selected = currentRoute?.startsWith(SonataRoute.Library.route) == true,
             onClick = {
                 navController.navigate(SonataRoute.Library.route) {
-                    //destroy everything above library but not itself
                     popUpTo(SonataRoute.Library.route) { inclusive = false }
                     launchSingleTop = true
                 }
@@ -49,13 +48,25 @@ fun BottomNavBar(navController: NavHostController) {
 
         NavigationBarItem(
             selected = currentRoute == SonataRoute.Search.route,
-            onClick = { navController.navigate(SonataRoute.Search.route) },
+            onClick = {
+                navController.navigate(SonataRoute.Search.route) {
+                    //clicking back here will return to library home
+                    //remove popUpTo and launchSingleTop if going back to nested screens is required
+                    popUpTo(SonataRoute.Search.route) { inclusive = false }
+                    launchSingleTop = true
+                }
+            },
             icon = { Text("Search") }
         )
 
         NavigationBarItem(
             selected = currentRoute?.startsWith(SonataRoute.Settings.route) == true,
-            onClick = { navController.navigate(SonataRoute.Settings.route) },
+            onClick = {
+                navController.navigate(SonataRoute.Settings.route) {
+                    popUpTo(SonataRoute.Settings.route) { inclusive = false }
+                    launchSingleTop = true
+                }
+            },
             icon = { Text("Set") }
         )
     }
