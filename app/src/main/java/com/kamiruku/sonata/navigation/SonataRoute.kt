@@ -6,7 +6,7 @@ sealed class SonataRoute(val route: String) {
     data object LibraryHome : SonataRoute("library/home")
     data object FolderRoot : SonataRoute("library/folder_root")
     data object Folder : SonataRoute("library/folder/{id}") {
-        fun create(id: Int) = "library/folder/$id"
+        fun create(id: String) = "library/folder/$id"
     }
     data object AllSongs : SonataRoute("library/all_songs")
 

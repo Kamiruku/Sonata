@@ -1,7 +1,6 @@
 package com.kamiruku.sonata
 
 import android.os.Parcelable
-import androidx.lifecycle.ViewModel
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.RawValue
 
@@ -16,7 +15,7 @@ data class FileNode(
     var musicTotal: Int = 0,
     var durationTotal: Long = 0,
     var albumId: Long = 0L, //or closest
-    var sortId: Int = 0
+    var sortId: String = ""
 ) : Parcelable
 
 data class Song (
@@ -103,7 +102,6 @@ object FileTreeBuilder {
             .ifBlank { "root" }
 
         val root = FileNode(lastFolderName, isFolder = true)
-        var sortId = 0
 
         for (song in audioList) {
             val parts = song.path
@@ -117,12 +115,14 @@ object FileTreeBuilder {
                 val isLast = (index == parts.lastIndex)
 
                 currentNode = currentNode.children.getOrPut(part) {
-                    sortId++
+                    val newSortId =
+                        if (currentNode.sortId.isEmpty()) part
+                        else "${currentNode.sortId}/$part"
                     FileNode(
                         name = part,
                         isFolder = !isLast,
                         song = if (isLast) song else null,
-                        sortId = sortId
+                        sortId = newSortId
                     )
                 }
             }

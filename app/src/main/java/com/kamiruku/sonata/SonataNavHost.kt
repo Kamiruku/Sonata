@@ -1,16 +1,13 @@
 package com.kamiruku.sonata
 
-import android.content.ContentUris
-import android.provider.MediaStore
+import android.net.Uri
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.media3.common.MediaItem
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -96,16 +93,16 @@ fun SonataNavHost(
             composable(
                 route = SonataRoute.Folder.route,
                 arguments = listOf(navArgument("id") {
-                    type = NavType.IntType }
+                    type = NavType.StringType }
                 )
             ) { backStackEntry ->
-                val id = backStackEntry.arguments?.getInt("id") ?: return@composable
+                val id = backStackEntry.arguments?.getString("id")?.let(Uri::decode) ?: return@composable
                 val node = viewModel.findNode(id) ?: return@composable
 
                 FolderScreen(
                     node = node,
                     onOpen = { child ->
-                        navController.navigate(SonataRoute.Folder.create(child.sortId))
+                        navController.navigate(SonataRoute.Folder.create(Uri.encode(child.sortId)))
                     },
                     onPlay = { node ->
                         println("Clicked ${node.song?.title}")

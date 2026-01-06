@@ -12,7 +12,7 @@ class SharedViewModel(): ViewModel() {
     private val _songList = MutableStateFlow<List<FileNode>>(emptyList())
     val songList: StateFlow<List<FileNode>> = _songList
 
-    private val nodeIndex = mutableMapOf<Int, FileNode>()
+    private val nodeIndex = mutableMapOf<String, FileNode>()
 
     private val _uiState = MutableStateFlow<LibraryUIState>(LibraryUIState.Loading)
     val uiState: StateFlow<LibraryUIState> = _uiState.asStateFlow()
@@ -53,7 +53,7 @@ class SharedViewModel(): ViewModel() {
         return result
     }
 
-    fun findNode(sortId: Int): FileNode? = nodeIndex[sortId]
+    fun findNode(sortId: String): FileNode? = nodeIndex[sortId]
 }
 
 sealed interface LibraryUIState {
