@@ -92,7 +92,11 @@ fun FileListItem(
                     val ext = node.song?.path?.substring(
                         node.song?.path?.lastIndexOf('.')?.plus(1) ?: 0
                     )
-                    "${ext?.uppercase()} | ${node.song?.duration?.toTime()}"
+                    val hr =
+                        (node.song?.bitsPerSample ?: 0) >= 24 ||
+                                (node.song?.sampleRate ?: 0) >= 96000
+                    if (hr) "${ext?.uppercase()} | HR | ${node.song?.duration?.toTime()}"
+                    else "${ext?.uppercase()} | ${node.song?.duration?.toTime()}"
                 } else {
                     "${node.musicTotal} | ${node.durationTotal.toTime()}"
                 }

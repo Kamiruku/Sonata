@@ -63,6 +63,7 @@ fun FolderHeader(
             )
         }
 
+        /*
         Surface(
             modifier = Modifier
                 .padding(16.dp)
@@ -80,6 +81,7 @@ fun FolderHeader(
                     .padding(8.dp)
             )
         }
+        */
 
         Column(
             modifier = Modifier
@@ -113,7 +115,7 @@ fun FolderHeader(
                     )
             ) {
                 Text(
-                    text = "\uD834\uDD1E ${node.musicTotal} | ${node.durationTotal.toTime()}",
+                    text = "${node.musicTotal} | ${node.durationTotal.toTime()}",
                     fontSize = 16.sp,
                     modifier = Modifier
                         .padding(6.dp)
