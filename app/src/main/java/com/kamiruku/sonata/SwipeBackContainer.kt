@@ -1,17 +1,8 @@
-package com.kamiruku.sonata.features.library
-
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -22,16 +13,13 @@ import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.kamiruku.sonata.features.library.components.FileListItem
-import com.kamiruku.sonata.FileNode
+import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 
 @Composable
-fun FileRootScreen(
-    onBack: () -> Unit,
-    node: FileNode,
-    onOpen: (FileNode) -> Unit
+fun SwipeBackContainer(
+    navController: NavController,
+    foreground: @Composable () -> Unit
 ) {
     val offsetX = remember { Animatable(0f) }
     val screenWidth = LocalConfiguration.current.screenWidthDp.toFloat()
@@ -51,8 +39,7 @@ fun FileRootScreen(
                 var dragging = true
                 while (dragging) {
                     val event = awaitPointerEvent()
-                    val dragAmount =
-                        event.changes.sumOf { it.positionChange().x.toDouble() }.toFloat()
+                    val dragAmount = event.changes.sumOf { it.positionChange().x.toDouble() }.toFloat()
                     pastDrag += dragAmount
 
                     scope.launch {
@@ -66,7 +53,11 @@ fun FileRootScreen(
                 if (offsetX.value > dismissThreshold) {
                     scope.launch {
                         offsetX.animateTo(screenWidthPx, tween(300))
-                        onBack()
+                        if (navController.previousBackStackEntry != null) {
+                            navController.navigateUp()
+                        } else {
+                            offsetX.animateTo(0f, tween(200))
+                        }
                     }
                 } else {
                     scope.launch {
@@ -78,40 +69,13 @@ fun FileRootScreen(
     }
 
     Box(
-        Modifier.fillMaxSize()
+        Modifier
             .graphicsLayer {
                 translationX = offsetX.value
                 alpha = 1f - (offsetX.value / screenWidthPx)
             }
             .then(swipeToClose)
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                top = 50.dp,
-                bottom = 50.dp,
-                start = 25.dp,
-                end = 25.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item {
-                Text(
-                    text = "Folder Hierarchy",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 30.dp),
-                    fontSize = 22.sp
-                )
-            }
-
-            item {
-                FileListItem(
-                    node = node,
-                    onClick = { onOpen(node) },
-                    onLongClick = {}
-                )
-            }
-        }
+        foreground()
     }
 }

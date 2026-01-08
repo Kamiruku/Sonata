@@ -1,6 +1,9 @@
 package com.kamiruku.sonata
 
+import SwipeBackContainer
 import android.net.Uri
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -68,6 +71,7 @@ fun SonataNavHost(
 
             composable(SonataRoute.AllSongs.route) {
                 AllSongsScreen(
+                    onBack = { navController.popBackStack() },
                     songList = songList,
                     onScrollDirectionChanged = onScrollDirectionChanged,
                     onPlay = { node ->
@@ -82,6 +86,7 @@ fun SonataNavHost(
             composable(SonataRoute.FolderRoot.route) {
                 root?.let {
                     FileRootScreen(
+                        onBack = { navController.popBackStack() },
                         node = it,
                         onOpen = { node ->
                             navController.navigate(SonataRoute.Folder.create(node.sortId))
