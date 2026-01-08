@@ -53,11 +53,7 @@ fun SwipeBackContainer(
                 if (offsetX.value > dismissThreshold) {
                     scope.launch {
                         offsetX.animateTo(screenWidthPx, tween(300))
-                        if (navController.previousBackStackEntry != null) {
-                            navController.navigateUp()
-                        } else {
-                            offsetX.animateTo(0f, tween(200))
-                        }
+                        navController.popBackStack()
                     }
                 } else {
                     scope.launch {
