@@ -1,10 +1,14 @@
 package com.kamiruku.sonata
 
+import SwipeBackContainer
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -17,6 +21,7 @@ import com.kamiruku.sonata.features.library.FileRootScreen
 import com.kamiruku.sonata.features.library.FolderScreen
 import com.kamiruku.sonata.features.library.LibraryScreen
 import com.kamiruku.sonata.features.settings.SettingsScreen
+import com.kamiruku.sonata.navigation.Navigator
 import com.kamiruku.sonata.navigation.SonataRoute
 import com.kamiruku.sonata.state.DirectionalLazyListState
 import com.kamiruku.sonata.ui.components.SongDetailsDialog
@@ -36,6 +41,35 @@ fun SonataNavHost(
 
     var selectedFile by remember { mutableStateOf<FileNode?>(null) }
 
+    val transitionMetadata = NavDisplay.transitionSpec {
+        slideInHorizontally(
+            initialOffsetX = { it },
+            animationSpec = tween(300)
+        ) togetherWith
+                slideOutHorizontally(
+                    targetOffsetX = { -it },
+                    animationSpec = tween(300)
+                )
+    } + NavDisplay.popTransitionSpec {
+        slideInHorizontally(
+            initialOffsetX = { -it },
+            animationSpec = tween(300)
+        ) togetherWith
+                slideOutHorizontally(
+                    targetOffsetX = { it },
+                    animationSpec = tween(300)
+                )
+    } + NavDisplay.predictivePopTransitionSpec {
+        slideInHorizontally(
+            initialOffsetX = { -it },
+            animationSpec = tween(300)
+        ) togetherWith
+                slideOutHorizontally(
+                    targetOffsetX = { it },
+                    animationSpec = tween(300)
+                )
+    }
+
     val entryProvider: (NavKey) -> NavEntry<NavKey> = entryProvider {
         entry<SonataRoute.LibraryHome> {
             LibraryScreen(
@@ -45,46 +79,65 @@ fun SonataNavHost(
             )
         }
 
-        entry<SonataRoute.AllSongs> {
-            AllSongsScreen(
-                songList = songList,
-                onScrollDirectionChanged = onScrollDirectionChanged,
-                onPlay = { node ->
-                    println("Clicked ${node.song?.title}")
-                },
-                openDetails = { node ->
-                    selectedFile = node
-                }
-            )
-        }
-
-        entry<SonataRoute.FolderRoot> {
-            root?.let {
-                FileRootScreen(
-                    node = it,
-                    onOpen = { node ->
-                        navigator.navigate(SonataRoute.Folder(node.sortId))
+        entry<SonataRoute.AllSongs>(
+           metadata = transitionMetadata
+        ) {
+            SwipeBackContainer(
+                onBack = { navigator.goBack() }
+            ) {
+                AllSongsScreen(
+                    songList = songList,
+                    onScrollDirectionChanged = onScrollDirectionChanged,
+                    onPlay = { node ->
+                        println("Clicked ${node.song?.title}")
+                    },
+                    openDetails = { node ->
+                        selectedFile = node
                     }
                 )
             }
+
         }
 
-        entry<SonataRoute.Folder> { key ->
+        entry<SonataRoute.FolderRoot>(
+            metadata = transitionMetadata
+        ) {
+            root?.let {
+                SwipeBackContainer(
+                    onBack = { navigator.goBack() }
+                ) {
+                    FileRootScreen(
+                        node = it,
+                        onOpen = { node ->
+                            navigator.navigate(SonataRoute.Folder(node.sortId))
+                        }
+                    )
+                }
+            }
+        }
+
+        entry<SonataRoute.Folder>(
+            metadata = transitionMetadata
+        ) { key ->
             val node = viewModel.findNode(key.id) ?: return@entry
-            FolderScreen(
-                node = node,
-                onOpen = { child ->
-                    navigator.navigate(SonataRoute.Folder(child.sortId))
-                },
-                onPlay = { node ->
-                    println("Clicked ${node.song?.title}")
-                },
-                openDetails = { node ->
-                    selectedFile = node
-                },
-                onBack = { navigator.goBack() },
-                onScrollDirectionChanged = onScrollDirectionChanged
-            )
+            SwipeBackContainer(
+                onBack = { navigator.goBack() }
+            ) {
+                FolderScreen(
+                    node = node,
+                    onOpen = { child ->
+                        navigator.navigate(SonataRoute.Folder(child.sortId))
+                    },
+                    onPlay = { node ->
+                        println("Clicked ${node.song?.title}")
+                    },
+                    openDetails = { node ->
+                        selectedFile = node
+                    },
+                    onBack = { navigator.goBack() },
+                    onScrollDirectionChanged = onScrollDirectionChanged
+                )
+            }
         }
 
         entry<SonataRoute.Search> {

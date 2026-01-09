@@ -1,6 +1,7 @@
-package com.kamiruku.sonata
+package com.kamiruku.sonata.navigation
 
 import androidx.navigation3.runtime.NavKey
+import com.kamiruku.sonata.NavigationState
 
 /**
  * Handles navigation events (forward and back) by updating the navigation state.

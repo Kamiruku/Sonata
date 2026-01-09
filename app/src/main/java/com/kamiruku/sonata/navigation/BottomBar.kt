@@ -9,7 +9,6 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import com.kamiruku.sonata.NavigationState
-import com.kamiruku.sonata.Navigator
 
 @Composable
 fun AnimatedBottomBar(

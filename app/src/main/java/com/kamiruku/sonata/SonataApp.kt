@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.kamiruku.sonata.navigation.AnimatedBottomBar
+import com.kamiruku.sonata.navigation.Navigator
 import com.kamiruku.sonata.navigation.SonataRoute
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
