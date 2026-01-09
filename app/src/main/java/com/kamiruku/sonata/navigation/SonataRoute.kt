@@ -1,23 +1,21 @@
 package com.kamiruku.sonata.navigation
 
-sealed class SonataRoute(val route: String) {
+import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
 
-    data object Library : SonataRoute("library")
-    data object LibraryHome : SonataRoute("library/home")
-    data object FolderRoot : SonataRoute("library/folder_root")
-    data object Folder : SonataRoute("library/folder/{id}") {
-        fun create(id: String) = "library/folder/$id"
-    }
-    data object AllSongs : SonataRoute("library/all_songs")
+@Serializable
+sealed interface SonataRoute: NavKey {
+    @Serializable data object LibraryHome : SonataRoute
+    @Serializable data object FolderRoot : SonataRoute
+    @Serializable data class Folder(val id: String) : SonataRoute
+    @Serializable data object AllSongs : SonataRoute
 
-    data object NowPlaying : SonataRoute("now_playing")
+    @Serializable data object NowPlaying : SonataRoute
 
-    data object Search: SonataRoute("search")
-    
-    data object Settings : SonataRoute("settings")
-    data object SettingsHome: SonataRoute("settings/home")
-    data object SettingsGeneral: SonataRoute("settings/general")
-    data object SettingsLibrary: SonataRoute("settings/library")
-    data object SettingsAudio: SonataRoute("settings/audio")
-    data object SettingsAbout: SonataRoute("settings/about")
+    @Serializable data object Search: SonataRoute
+    @Serializable data object SettingsHome: SonataRoute
+    @Serializable data object SettingsGeneral: SonataRoute
+    @Serializable data object SettingsLibrary: SonataRoute
+    @Serializable data object SettingsAudio: SonataRoute
+    @Serializable data object SettingsAbout: SonataRoute
 }

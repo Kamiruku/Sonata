@@ -8,13 +8,14 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.currentBackStackEntryAsState
+import com.kamiruku.sonata.NavigationState
+import com.kamiruku.sonata.Navigator
 
 @Composable
 fun AnimatedBottomBar(
     visible: Boolean,
-    navController: NavHostController
+    navigator: Navigator,
+    navigationState: NavigationState
 ) {
     //will include mini-player later, that's why this is here
     AnimatedVisibility(
@@ -23,50 +24,31 @@ fun AnimatedBottomBar(
         exit = slideOutVertically { fullHeight -> fullHeight }
     ) {
         Column {
-            BottomNavBar(navController)
+            BottomNavBar(navigator, navigationState)
         }
     }
 }
 
 @Composable
-fun BottomNavBar(navController: NavHostController) {
-    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
-
+fun BottomNavBar(navigator: Navigator, navigationState: NavigationState) {
     NavigationBar {
         NavigationBarItem(
-            selected = currentRoute?.startsWith(SonataRoute.Library.route) == true,
-            onClick = {
-                navController.navigate(SonataRoute.Library.route) {
-                    popUpTo(SonataRoute.Library.route) { inclusive = false }
-                    launchSingleTop = true
-                }
-            },
+            selected = SonataRoute.LibraryHome == navigationState.topLevelRoute,
+            onClick = { navigator.navigate(SonataRoute.LibraryHome, popUpTo = true) },
             icon = {
                 Text("Lib")
             }
         )
 
         NavigationBarItem(
-            selected = currentRoute == SonataRoute.Search.route,
-            onClick = {
-                navController.navigate(SonataRoute.Search.route) {
-                    //clicking back here will return to library home
-                    //remove popUpTo and launchSingleTop if going back to nested screens is required
-                    popUpTo(SonataRoute.Search.route) { inclusive = false }
-                    launchSingleTop = true
-                }
-            },
+            selected = SonataRoute.Search == navigationState.topLevelRoute,
+            onClick = { navigator.navigate(SonataRoute.Search) },
             icon = { Text("Search") }
         )
 
         NavigationBarItem(
-            selected = currentRoute?.startsWith(SonataRoute.Settings.route) == true,
-            onClick = {
-                navController.navigate(SonataRoute.Settings.route) {
-                    popUpTo(SonataRoute.Settings.route) { inclusive = false }
-                    launchSingleTop = true
-                }
-            },
+            selected = SonataRoute.SettingsHome == navigationState.topLevelRoute,
+            onClick = { navigator.navigate(SonataRoute.SettingsHome, popUpTo = true) },
             icon = { Text("Set") }
         )
     }

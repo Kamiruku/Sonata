@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id ("kotlin-parcelize")
     id("com.google.devtools.ksp")
+    alias(libs.plugins.jetbrains.kotlin.serialization)
 }
 
 android {
@@ -77,7 +78,6 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     implementation(libs.coil.compose)
-    implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.material3)
     implementation(libs.material)
 

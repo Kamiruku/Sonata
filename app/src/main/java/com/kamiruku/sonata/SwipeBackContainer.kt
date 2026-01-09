@@ -13,12 +13,10 @@ import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 
 @Composable
 fun SwipeBackContainer(
-    navController: NavController,
     foreground: @Composable () -> Unit
 ) {
     val offsetX = remember { Animatable(0f) }
@@ -53,7 +51,6 @@ fun SwipeBackContainer(
                 if (offsetX.value > dismissThreshold) {
                     scope.launch {
                         offsetX.animateTo(screenWidthPx, tween(300))
-                        navController.popBackStack()
                     }
                 } else {
                     scope.launch {
