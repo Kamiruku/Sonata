@@ -70,7 +70,7 @@ fun SonataNavHost(
                 )
     }
 
-    val entryProvider: (NavKey) -> NavEntry<NavKey> = entryProvider {
+    val entryProvider = entryProvider {
         entry<SonataRoute.LibraryHome> {
             LibraryScreen(
                 buttonEnabled = buttonEnabled,

@@ -5,17 +5,17 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 sealed interface SonataRoute: NavKey {
-    @Serializable data object LibraryHome : SonataRoute
-    @Serializable data object FolderRoot : SonataRoute
-    @Serializable data class Folder(val id: String) : SonataRoute
-    @Serializable data object AllSongs : SonataRoute
+    @Serializable data object LibraryHome : NavKey
+    @Serializable data object FolderRoot : NavKey
+    @Serializable data class Folder(val id: String) : NavKey
+    @Serializable data object AllSongs : NavKey
 
-    @Serializable data object NowPlaying : SonataRoute
+    @Serializable data object NowPlaying : NavKey
 
-    @Serializable data object Search: SonataRoute
-    @Serializable data object SettingsHome: SonataRoute
-    @Serializable data object SettingsGeneral: SonataRoute
-    @Serializable data object SettingsLibrary: SonataRoute
-    @Serializable data object SettingsAudio: SonataRoute
-    @Serializable data object SettingsAbout: SonataRoute
+    @Serializable data object Search: NavKey
+    @Serializable data object SettingsHome: NavKey
+    @Serializable data object SettingsGeneral: NavKey
+    @Serializable data object SettingsLibrary: NavKey
+    @Serializable data object SettingsAudio: NavKey
+    @Serializable data object SettingsAbout: NavKey
 }
