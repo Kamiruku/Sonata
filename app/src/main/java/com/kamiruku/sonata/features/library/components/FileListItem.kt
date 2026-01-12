@@ -10,9 +10,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
@@ -63,7 +68,7 @@ fun FileListItem(
             model = imageRequest,
             contentDescription = "Album art",
             modifier = Modifier
-                .size(60.dp)
+                .size(70.dp)
                 .clip(RoundedCornerShape(8.dp)),
             contentScale = ContentScale.Crop
         )
@@ -71,6 +76,8 @@ fun FileListItem(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .align(Alignment.CenterVertically),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             Text(
                 text = if (!node.isFolder) {
@@ -79,6 +86,7 @@ fun FileListItem(
                     node.name
                 },
                 modifier = Modifier
+                    .weight(1f)
                     .fillMaxWidth()
                     //TODO implement marquee check
                     .basicMarquee(),
@@ -87,6 +95,7 @@ fun FileListItem(
                 overflow = TextOverflow.Clip
 
             )
+
             val subText = remember(node.sortId) {
                 if (!node.isFolder) {
                     val ext = node.song?.path?.substring(
@@ -101,12 +110,23 @@ fun FileListItem(
                     "${node.musicTotal} | ${node.durationTotal.toTime()}"
                 }
             }
-            Text(
-                text = subText,
-                modifier = Modifier.fillMaxWidth(),
-                fontSize = 16.sp,
-                maxLines = 1
-            )
+
+            Row {
+                Text(
+                    text = subText,
+                    modifier = Modifier.weight(1f),
+                    fontSize = 16.sp,
+                    maxLines = 1
+                )
+
+                if (node.isFolder) {
+                    Icon(
+                        imageVector = Icons.Outlined.Folder,
+                        contentDescription = "folder",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
         }
     }
 }

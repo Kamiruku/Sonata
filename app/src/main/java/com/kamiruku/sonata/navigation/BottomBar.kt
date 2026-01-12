@@ -4,6 +4,12 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.LibraryMusic
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
@@ -35,20 +41,33 @@ fun BottomNavBar(navigator: Navigator, navigationState: NavigationState) {
             selected = SonataRoute.LibraryHome == navigationState.topLevelRoute,
             onClick = { navigator.navigate(SonataRoute.LibraryHome, popUpTo = true) },
             icon = {
-                Text("Lib")
+                Icon(
+                    Icons.Outlined.LibraryMusic,
+                    contentDescription = "library"
+                )
             }
         )
 
         NavigationBarItem(
             selected = SonataRoute.Search == navigationState.topLevelRoute,
             onClick = { navigator.navigate(SonataRoute.Search) },
-            icon = { Text("Search") }
+            icon = {
+                Icon(
+                    Icons.Outlined.Search,
+                    contentDescription = "search"
+                )
+            }
         )
 
         NavigationBarItem(
             selected = SonataRoute.SettingsHome == navigationState.topLevelRoute,
             onClick = { navigator.navigate(SonataRoute.SettingsHome, popUpTo = true) },
-            icon = { Text("Set") }
+            icon = {
+                Icon(
+                    Icons.Outlined.Settings,
+                    contentDescription = "settings"
+                )
+            }
         )
     }
 }
