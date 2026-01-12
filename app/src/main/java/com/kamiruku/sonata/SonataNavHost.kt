@@ -2,6 +2,10 @@ package com.kamiruku.sonata
 
 import SwipeBackContainer
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -12,8 +16,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.navigation3.runtime.NavEntry
-import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.kamiruku.sonata.features.library.AllSongsScreen
@@ -41,33 +43,34 @@ fun SonataNavHost(
 
     var selectedFile by remember { mutableStateOf<FileNode?>(null) }
 
-    val transitionMetadata = NavDisplay.transitionSpec {
+    val transitionMetadata
+    =   NavDisplay.transitionSpec {
         slideInHorizontally(
             initialOffsetX = { it },
             animationSpec = tween(300)
-        ) togetherWith
+        ) + fadeIn(initialAlpha = 0.8f) + scaleIn(initialScale = 0.8f) togetherWith
                 slideOutHorizontally(
                     targetOffsetX = { -it },
                     animationSpec = tween(300)
-                )
+                ) + fadeOut() + scaleOut(targetScale = 0.8f)
     } + NavDisplay.popTransitionSpec {
         slideInHorizontally(
             initialOffsetX = { -it },
             animationSpec = tween(300)
-        ) togetherWith
+        ) + fadeIn(initialAlpha = 0.8f) + scaleIn(initialScale = 0.8f) togetherWith
                 slideOutHorizontally(
                     targetOffsetX = { it },
                     animationSpec = tween(300)
-                )
+                ) + fadeOut() + scaleOut(targetScale = 0.8f)
     } + NavDisplay.predictivePopTransitionSpec {
         slideInHorizontally(
             initialOffsetX = { -it },
             animationSpec = tween(300)
-        ) togetherWith
+        ) + fadeIn(initialAlpha = 0.8f) + scaleIn(initialScale = 0.8f) togetherWith
                 slideOutHorizontally(
                     targetOffsetX = { it },
                     animationSpec = tween(300)
-                )
+                ) + fadeOut() + scaleOut(targetScale = 0.8f)
     }
 
     val entryProvider = entryProvider {
