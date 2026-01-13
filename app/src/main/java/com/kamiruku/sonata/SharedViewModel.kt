@@ -2,7 +2,6 @@ package com.kamiruku.sonata
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
 import com.kamiruku.sonata.db.SongEntity
 import com.kamiruku.sonata.db.SongRepository
@@ -26,6 +25,8 @@ class SharedViewModel(
 
     private val _uiState = MutableStateFlow<LibraryUIState>(LibraryUIState.Loading)
     val uiState: StateFlow<LibraryUIState> = _uiState.asStateFlow()
+
+    @Volatile private var dbSongList: List<Song>? = null
 
     fun setList(rootNode: FileNode) {
         _rootNode.value = rootNode
@@ -65,14 +66,26 @@ class SharedViewModel(
 
     fun findNode(sortId: String): FileNode? = nodeIndex[sortId]
 
-    fun loadMusic() {
+    fun loadCachedSongs() {
         viewModelScope.launch(Dispatchers.IO) {
-            val mediaStoreSource = MediaStoreSource(application.contentResolver)
+            val songList = songRepository.getAllSongs().map {
+                it.toUiModel()
+            }
+            val rootNode = FileTreeBuilder.buildTree(songList)
+            setList(rootNode)
+            dbSongList = songList
+        }
+    }
+
+    fun syncMusic() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val mediaStoreSource = MediaStoreSource(getApplication<Application>().contentResolver)
 
             mediaStoreSource.syncLibrary(songRepository)
             val songList = songRepository.getAllSongs().map {
                 it.toUiModel()
             }
+            if (songList == dbSongList) return@launch
             val rootNode = FileTreeBuilder.buildTree(songList)
             setList(rootNode)
         }

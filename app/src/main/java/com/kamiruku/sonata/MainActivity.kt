@@ -43,7 +43,10 @@ class MainActivity : FragmentActivity() {
             SharedViewModelFactory(this@MainActivity.application, songRepository)
         }
 
-        checkPermission({ viewModel.loadMusic() })
+        checkPermission({
+            viewModel.loadCachedSongs()
+            viewModel.syncMusic()
+        })
 
         setContent {
             SonataTheme {
