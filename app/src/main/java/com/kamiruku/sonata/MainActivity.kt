@@ -1,6 +1,7 @@
 package com.kamiruku.sonata
 
 import android.Manifest
+import android.app.Application
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.Toast
@@ -15,18 +16,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.lifecycleScope
-import com.kamiruku.sonata.db.SongEntity
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import com.kamiruku.sonata.db.SongRepository
 import com.kamiruku.sonata.ui.theme.SonataTheme
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 
 class MainActivity : FragmentActivity() {
     private lateinit var permissionLauncher: ActivityResultLauncher<String>
-    private val viewModel: SharedViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -40,7 +37,13 @@ class MainActivity : FragmentActivity() {
             }
         }
 
-        checkPermission()
+        val songRepository = SongRepository(this@MainActivity)
+
+        val viewModel: SharedViewModel by viewModels {
+            SharedViewModelFactory(this@MainActivity.application, songRepository)
+        }
+
+        checkPermission({ viewModel.loadMusic() })
 
         setContent {
             SonataTheme {
@@ -57,7 +60,7 @@ class MainActivity : FragmentActivity() {
         }
     }
 
-    fun checkPermission() {
+    fun checkPermission(loadMusic: () -> Unit) {
         if (ActivityCompat.checkSelfPermission(
                 this@MainActivity,
                 Manifest.permission.READ_MEDIA_AUDIO
@@ -68,43 +71,13 @@ class MainActivity : FragmentActivity() {
             permissionLauncher.launch(Manifest.permission.READ_MEDIA_AUDIO)
         }
     }
+}
 
-    private fun loadMusic() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val repository = SongRepository(this@MainActivity.applicationContext)
-            val mediaStoreSource = MediaStoreSource(contentResolver)
-
-            mediaStoreSource.syncLibrary(repository)
-            val songList = repository.getAllSongs().map {
-                it.toUiModel()
-            }
-            val rootNode = FileTreeBuilder.buildTree(songList)
-
-            withContext(Dispatchers.Main) {
-                viewModel.setList(rootNode)
-            }
-        }
-    }
-
-    fun SongEntity.toUiModel(): Song {
-        return Song(
-            iD = this.mediaStoreId,
-            albumId = this.mediaStoreAlbumId,
-            artists = this.artists,
-            title = this.title,
-            album = this.album,
-            date = this.date,
-            albumArtist = this.albumArtist,
-            track = this.track,
-            disc = this.disc,
-            bitrate = this.bitrate,
-            sampleRate = this.sampleRate,
-            channels = this.channels,
-            bitsPerSample = this.bitsPerSample,
-            duration = this.duration,
-            dateModified = this.dateModified,
-            size = this.size,
-            path = this.path
-        )
+class SharedViewModelFactory(
+    private val application: Application,
+    private val songRepository: SongRepository
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        return SharedViewModel(application, songRepository) as T
     }
 }

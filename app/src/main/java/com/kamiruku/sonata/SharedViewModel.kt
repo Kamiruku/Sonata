@@ -1,11 +1,21 @@
 package com.kamiruku.sonata
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.application
+import androidx.lifecycle.viewModelScope
+import com.kamiruku.sonata.db.SongEntity
+import com.kamiruku.sonata.db.SongRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
-class SharedViewModel(): ViewModel() {
+class SharedViewModel(
+    application: Application,
+    private val songRepository: SongRepository
+): AndroidViewModel(application) {
     private val _rootNode = MutableStateFlow<FileNode?>(null)
     val rootNode: StateFlow<FileNode?> = _rootNode
 
@@ -54,6 +64,41 @@ class SharedViewModel(): ViewModel() {
     }
 
     fun findNode(sortId: String): FileNode? = nodeIndex[sortId]
+
+    fun loadMusic() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val mediaStoreSource = MediaStoreSource(application.contentResolver)
+
+            mediaStoreSource.syncLibrary(songRepository)
+            val songList = songRepository.getAllSongs().map {
+                it.toUiModel()
+            }
+            val rootNode = FileTreeBuilder.buildTree(songList)
+            setList(rootNode)
+        }
+    }
+
+    fun SongEntity.toUiModel(): Song {
+        return Song(
+            iD = this.mediaStoreId,
+            albumId = this.mediaStoreAlbumId,
+            artists = this.artists,
+            title = this.title,
+            album = this.album,
+            date = this.date,
+            albumArtist = this.albumArtist,
+            track = this.track,
+            disc = this.disc,
+            bitrate = this.bitrate,
+            sampleRate = this.sampleRate,
+            channels = this.channels,
+            bitsPerSample = this.bitsPerSample,
+            duration = this.duration,
+            dateModified = this.dateModified,
+            size = this.size,
+            path = this.path
+        )
+    }
 }
 
 sealed interface LibraryUIState {
