@@ -10,8 +10,10 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,11 +24,14 @@ import com.kamiruku.sonata.features.library.AllSongsScreen
 import com.kamiruku.sonata.features.library.FileRootScreen
 import com.kamiruku.sonata.features.library.FolderScreen
 import com.kamiruku.sonata.features.library.LibraryScreen
+import com.kamiruku.sonata.features.search.SearchScreen
 import com.kamiruku.sonata.features.settings.SettingsScreen
 import com.kamiruku.sonata.navigation.Navigator
 import com.kamiruku.sonata.navigation.SonataRoute
 import com.kamiruku.sonata.state.DirectionalLazyListState
 import com.kamiruku.sonata.ui.components.SongDetailsDialog
+import java.text.Normalizer
+import java.util.Locale
 
 @Composable
 fun SonataNavHost(
@@ -144,7 +149,27 @@ fun SonataNavHost(
         }
 
         entry<SonataRoute.Search> {
+            val textFieldState = rememberTextFieldState()
+            val songResults: List<Song> by remember {
+                derivedStateOf {
+                    val searchText = textFieldState.text.toString()
+                    if (searchText.isEmpty()) {
+                        emptyList()
+                    } else {
+                        getSongBySearch(searchText, songList)
+                    }
+                }
+            }
 
+            SearchScreen(
+                textFieldState,
+                onSearch = { },
+                searchResults = songResults,
+                onClick = { },
+                onLongClick = { selectedSong ->
+                    selectedFile = FileNode("", selectedSong, false)
+                }
+            )
         }
 
         entry<SonataRoute.NowPlaying> {
@@ -187,6 +212,20 @@ fun SonataNavHost(
         file = selectedFile,
         onDismiss = { selectedFile = null }
     )
+}
+
+fun getSongBySearch(query: String, songList: List<FileNode>): List<Song> {
+    return songList.filter { file ->
+        (file.song?.title ?: "").normalizeForSearch()
+            .contains(query.normalizeForSearch())
+    }.map { it.song as Song }
+}
+
+fun String.normalizeForSearch(): String {
+    return Normalizer
+        .normalize(this, Normalizer.Form.NFD)
+        .replace("\\p{Mn}+".toRegex(), "")
+        .lowercase(Locale.ROOT)
 }
 
 @Composable
