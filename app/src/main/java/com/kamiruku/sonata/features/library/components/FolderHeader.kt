@@ -30,8 +30,7 @@ import com.kamiruku.sonata.utils.toTime
 
 @Composable
 fun FolderHeader(
-    node: FileNode,
-    onBack: () -> Unit
+    node: FileNode
 ) {
     val context = LocalContext.current
     val imageRequest = remember(node.albumId, context) {

@@ -35,8 +35,8 @@ import com.kamiruku.sonata.utils.toTime
 @Composable
 fun FileListItem(
     node: FileNode,
-    onClick: (FileNode) -> Unit,
-    onLongClick: (FileNode) -> Unit
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
 ) {
     /*
     Row for individual file/folder
@@ -49,8 +49,8 @@ fun FileListItem(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
-                onClick = { onClick(node) },
-                onLongClick = { onLongClick(node) }
+                onClick = { onClick() },
+                onLongClick = { onLongClick() }
             )
             .padding(vertical = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)

@@ -22,6 +22,7 @@ import com.google.samples.apps.nowinandroid.core.designsystem.component.scrollba
 import com.google.samples.apps.nowinandroid.core.designsystem.component.scrollbar.rememberDraggableScroller
 import com.google.samples.apps.nowinandroid.core.designsystem.component.scrollbar.scrollbarState
 import com.kamiruku.sonata.FileNode
+import com.kamiruku.sonata.Song
 import com.kamiruku.sonata.features.library.components.FileListItem
 import com.kamiruku.sonata.features.library.components.FolderHeader
 import com.kamiruku.sonata.rememberDirectionalLazyListState
@@ -32,8 +33,8 @@ fun FolderScreen(
     node: FileNode,
     onOpen: (FileNode) -> Unit,
     onBack: () -> Unit,
-    onPlay: (FileNode) -> Unit,
-    openDetails: (FileNode) -> Unit,
+    onPlay: (Song) -> Unit,
+    openDetails: (Song) -> Unit,
     onScrollDirectionChanged: (Boolean) -> Unit
 ) {
     val listState = rememberLazyListState()
@@ -68,7 +69,7 @@ fun FolderScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item(key = node.sortId) {
-                FolderHeader(node, onBack)
+                FolderHeader(node)
             }
 
             items(
@@ -84,8 +85,8 @@ fun FolderScreen(
                 } else {
                     FileListItem(
                         node = child,
-                        onClick = { onPlay(child) },
-                        onLongClick = { openDetails(child) }
+                        onClick = { child.song?.let(onPlay) },
+                        onLongClick = { child.song?.let(openDetails) }
                     )
                 }
             }

@@ -1,6 +1,7 @@
 package com.kamiruku.sonata
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.kamiruku.sonata.db.SongEntity
@@ -85,7 +86,10 @@ class SharedViewModel(
             val songList = songRepository.getAllSongs().map {
                 it.toUiModel()
             }
-            if (songList == dbSongList) return@launch
+            if (songList == dbSongList) {
+                Log.d("Sync Music", "songList was the same.")
+                return@launch
+            }
             val rootNode = FileTreeBuilder.buildTree(songList)
             setList(rootNode)
         }

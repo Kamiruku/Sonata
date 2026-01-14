@@ -46,7 +46,7 @@ fun SonataNavHost(
     val root by viewModel.rootNode.collectAsState()
     val songList by viewModel.songList.collectAsState()
 
-    var selectedFile by remember { mutableStateOf<FileNode?>(null) }
+    var selectedSong by remember { mutableStateOf<Song?>(null) }
 
     val transitionMetadata
     =   NavDisplay.transitionSpec {
@@ -96,11 +96,11 @@ fun SonataNavHost(
                 AllSongsScreen(
                     songList = songList,
                     onScrollDirectionChanged = onScrollDirectionChanged,
-                    onPlay = { node ->
-                        println("Clicked ${node.song?.title}")
+                    onPlay = { song ->
+                        println("Clicked ${song.title}")
                     },
-                    openDetails = { node ->
-                        selectedFile = node
+                    openDetails = { song ->
+                        selectedSong = song
                     }
                 )
             }
@@ -136,11 +136,11 @@ fun SonataNavHost(
                     onOpen = { child ->
                         navigator.navigate(SonataRoute.Folder(child.sortId))
                     },
-                    onPlay = { node ->
-                        println("Clicked ${node.song?.title}")
+                    onPlay = { song ->
+                        println("Clicked ${song.title}")
                     },
-                    openDetails = { node ->
-                        selectedFile = node
+                    openDetails = { song ->
+                        selectedSong = song
                     },
                     onBack = { navigator.goBack() },
                     onScrollDirectionChanged = onScrollDirectionChanged
@@ -166,8 +166,8 @@ fun SonataNavHost(
                 onSearch = { },
                 searchResults = songResults,
                 onClick = { },
-                onLongClick = { selectedSong ->
-                    selectedFile = FileNode("", selectedSong, false)
+                onLongClick = { song ->
+                    selectedSong = song
                 }
             )
         }
@@ -209,8 +209,8 @@ fun SonataNavHost(
     )
 
     SongDetailsDialog(
-        file = selectedFile,
-        onDismiss = { selectedFile = null }
+        song = selectedSong,
+        onDismiss = { selectedSong = null }
     )
 }
 
@@ -218,7 +218,7 @@ fun getSongBySearch(query: String, songList: List<FileNode>): List<Song> {
     return songList.filter { file ->
         (file.song?.title ?: "").normalizeForSearch()
             .contains(query.normalizeForSearch())
-    }.map { it.song as Song }
+    }.mapNotNull { it.song }
 }
 
 fun String.normalizeForSearch(): String {

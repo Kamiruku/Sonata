@@ -33,13 +33,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.kamiruku.sonata.FileNode
 import com.kamiruku.sonata.Song
 import com.kamiruku.sonata.taglib.TagLib
 import com.kamiruku.sonata.taglib.TagLibObject
 import com.kamiruku.sonata.utils.toTime
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -47,11 +45,10 @@ import java.util.Locale
 
 @Composable
 fun SongDetailsDialog(
-    file: FileNode?,
+    song: Song?,
     onDismiss: () -> Unit
 ) {
-    if (file == null)  return
-    val song = file.song ?: return
+    if (song == null) return
 
     val context = LocalContext.current
     var audioDetails by remember { mutableStateOf<TagLibObject?>(null) }

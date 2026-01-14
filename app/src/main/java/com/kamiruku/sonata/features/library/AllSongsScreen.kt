@@ -25,6 +25,7 @@ import com.google.samples.apps.nowinandroid.core.designsystem.component.scrollba
 import com.google.samples.apps.nowinandroid.core.designsystem.component.scrollbar.rememberDraggableScroller
 import com.google.samples.apps.nowinandroid.core.designsystem.component.scrollbar.scrollbarState
 import com.kamiruku.sonata.FileNode
+import com.kamiruku.sonata.Song
 import com.kamiruku.sonata.features.library.components.FileListItem
 import com.kamiruku.sonata.rememberDirectionalLazyListState
 import com.kamiruku.sonata.state.ScrollDirection
@@ -33,8 +34,8 @@ import com.kamiruku.sonata.state.ScrollDirection
 fun AllSongsScreen(
     songList: List<FileNode>,
     onScrollDirectionChanged: (Boolean) -> Unit,
-    onPlay: (FileNode) -> Unit,
-    openDetails: (FileNode) -> Unit,
+    onPlay: (Song) -> Unit,
+    openDetails: (Song) -> Unit,
 ) {
     val listState = rememberLazyListState()
     val directionState = rememberDirectionalLazyListState(listState)
@@ -78,8 +79,8 @@ fun AllSongsScreen(
             ) { node ->
                 FileListItem(
                     node = node,
-                    onClick = { onPlay(node) },
-                    onLongClick = { openDetails(node) }
+                    onClick = { node.song?.let(onPlay) },
+                    onLongClick = { node.song?.let(openDetails) }
                 )
             }
         }
