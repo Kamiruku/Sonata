@@ -27,4 +27,8 @@ class SongRepository(context: Context) {
             songDao.deleteByPaths(paths.toList())
         }
     }
+
+    suspend fun getSongByTitle(q: String): List<SongEntity> {
+        return songDao.searchByTitle("%$q%")
+    }
 }

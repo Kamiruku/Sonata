@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,8 +47,7 @@ fun SonataNavHost(
 
     var selectedSong by remember { mutableStateOf<Song?>(null) }
 
-    val transitionMetadata
-    =   NavDisplay.transitionSpec {
+    val transitionMetadata = NavDisplay.transitionSpec {
         slideInHorizontally(
             initialOffsetX = { it },
             animationSpec = tween(300)
@@ -88,7 +86,7 @@ fun SonataNavHost(
         }
 
         entry<SonataRoute.AllSongs>(
-           metadata = transitionMetadata
+            metadata = transitionMetadata
         ) {
             SwipeBackContainer(
                 onBack = { navigator.goBack() }
@@ -150,21 +148,14 @@ fun SonataNavHost(
 
         entry<SonataRoute.Search> {
             val textFieldState = rememberTextFieldState()
-            val songResults: List<Song> by remember {
-                derivedStateOf {
-                    val searchText = textFieldState.text.toString()
-                    if (searchText.isEmpty()) {
-                        emptyList()
-                    } else {
-                        getSongBySearch(searchText, songList)
-                    }
-                }
-            }
+            val filteredSongs = viewModel.filteredSongs
 
             SearchScreen(
                 textFieldState,
-                onSearch = { },
-                searchResults = songResults,
+                onQueryChange = {
+                    viewModel.query.value = textFieldState.text.toString()
+                },
+                searchResults = filteredSongs,
                 onClick = { },
                 onLongClick = { song ->
                     selectedSong = song
@@ -212,20 +203,6 @@ fun SonataNavHost(
         song = selectedSong,
         onDismiss = { selectedSong = null }
     )
-}
-
-fun getSongBySearch(query: String, songList: List<FileNode>): List<Song> {
-    return songList.filter { file ->
-        (file.song?.title ?: "").normalizeForSearch()
-            .contains(query.normalizeForSearch())
-    }.mapNotNull { it.song }
-}
-
-fun String.normalizeForSearch(): String {
-    return Normalizer
-        .normalize(this, Normalizer.Form.NFD)
-        .replace("\\p{Mn}+".toRegex(), "")
-        .lowercase(Locale.ROOT)
 }
 
 @Composable

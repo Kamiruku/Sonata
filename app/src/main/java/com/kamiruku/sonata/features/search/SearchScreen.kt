@@ -26,7 +26,7 @@ import com.kamiruku.sonata.features.search.components.SongListItem
 @Composable
 fun SearchScreen(
     textFieldState: TextFieldState,
-    onSearch: (String) -> Unit,
+    onQueryChange: () -> Unit,
     searchResults: List<Song>,
     onClick: (Song) -> Unit,
     onLongClick: (Song) -> Unit
@@ -39,11 +39,11 @@ fun SearchScreen(
             inputField = {
                 SearchBarDefaults.InputField(
                     query = textFieldState.text.toString(),
-                    onQueryChange = { textFieldState.edit { replace(0, length, it) } },
-                    onSearch = {
-                        onSearch(textFieldState.text.toString())
-                        expanded = false
+                    onQueryChange = {
+                        textFieldState.edit { replace(0, length, it) }
+                        onQueryChange()
                     },
+                    onSearch = { },
                     expanded = expanded,
                     onExpandedChange = { expanded = it },
                     placeholder = { Text("Search") }

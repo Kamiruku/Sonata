@@ -2,16 +2,26 @@ package com.kamiruku.sonata
 
 import android.app.Application
 import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.kamiruku.sonata.db.SongEntity
 import com.kamiruku.sonata.db.SongRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
+@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class SharedViewModel(
     application: Application,
     private val songRepository: SongRepository
@@ -26,6 +36,9 @@ class SharedViewModel(
 
     private val _uiState = MutableStateFlow<LibraryUIState>(LibraryUIState.Loading)
     val uiState: StateFlow<LibraryUIState> = _uiState.asStateFlow()
+
+    val query = MutableStateFlow("")
+    var filteredSongs by mutableStateOf<List<Song>>(emptyList())
 
     @Volatile private var dbSongList: List<Song>? = null
 
@@ -92,6 +105,20 @@ class SharedViewModel(
             }
             val rootNode = FileTreeBuilder.buildTree(songList)
             setList(rootNode)
+        }
+    }
+
+    init {
+        viewModelScope.launch {
+            query
+                .debounce(400)
+                .mapLatest { q ->
+                    if (q.isBlank()) emptyList<Song>()
+                    else withContext(Dispatchers.IO) {
+                        songRepository.getSongByTitle(q).map { it.toUiModel() }
+                    }
+                }
+                .collectLatest { filteredSongs = it }
         }
     }
 
