@@ -1,5 +1,6 @@
 package com.kamiruku.sonata.features.search
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -7,7 +8,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Clear
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
@@ -46,7 +52,25 @@ fun SearchScreen(
                     onSearch = { },
                     expanded = expanded,
                     onExpandedChange = { expanded = it },
-                    placeholder = { Text("Search") }
+                    placeholder = { Text("Search") },
+                    leadingIcon = {
+                        Icon(Icons.Outlined.Search, contentDescription = "search")
+                    },
+                    trailingIcon = {
+                        IconButton(
+                            onClick = {
+                                if (!textFieldState.text.isEmpty()) {
+                                    textFieldState.edit { replace(0, length, "") }
+                                    onQueryChange()
+                                }
+                            }
+                        ) {
+                            Icon(
+                                Icons.Outlined.Clear,
+                                contentDescription = "clear"
+                            )
+                        }
+                    }
                 )
             },
             expanded = expanded,
