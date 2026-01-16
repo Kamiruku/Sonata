@@ -4,6 +4,7 @@ import android.app.Application
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -39,6 +40,7 @@ class SharedViewModel(
 
     val query = MutableStateFlow("")
     var filteredSongs by mutableStateOf<List<Song>>(emptyList())
+    val selectedItems = mutableStateSetOf<String>()
 
     @Volatile private var dbSongList: List<Song>? = null
 

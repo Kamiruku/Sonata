@@ -13,10 +13,12 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.kamiruku.sonata.features.library.AllSongsScreen
@@ -28,9 +30,6 @@ import com.kamiruku.sonata.features.settings.SettingsScreen
 import com.kamiruku.sonata.navigation.Navigator
 import com.kamiruku.sonata.navigation.SonataRoute
 import com.kamiruku.sonata.state.DirectionalLazyListState
-import com.kamiruku.sonata.ui.components.SongDetailsDialog
-import java.text.Normalizer
-import java.util.Locale
 
 @Composable
 fun SonataNavHost(
@@ -46,6 +45,10 @@ fun SonataNavHost(
     val songList by viewModel.songList.collectAsState()
 
     var selectedSong by remember { mutableStateOf<Song?>(null) }
+
+    val inSelectionMode by remember {
+        derivedStateOf { viewModel.selectedItems.isNotEmpty() }
+    }
 
     val transitionMetadata = NavDisplay.transitionSpec {
         slideInHorizontally(
@@ -92,13 +95,17 @@ fun SonataNavHost(
                 onBack = { navigator.goBack() }
             ) {
                 AllSongsScreen(
+                    selectedItems = viewModel.selectedItems,
+                    inSelectionMode = inSelectionMode,
+                    onToggleSelect = { path ->
+                        if (!viewModel.selectedItems.add(path)) {
+                            viewModel.selectedItems.remove(path)
+                        }
+                    },
                     songList = songList,
                     onScrollDirectionChanged = onScrollDirectionChanged,
                     onPlay = { song ->
                         println("Clicked ${song.title}")
-                    },
-                    openDetails = { song ->
-                        selectedSong = song
                     }
                 )
             }
@@ -130,6 +137,13 @@ fun SonataNavHost(
                 onBack = { navigator.goBack() }
             ) {
                 FolderScreen(
+                    selectedItems = viewModel.selectedItems,
+                    inSelectionMode = inSelectionMode,
+                    onToggleSelect = { path ->
+                        if (!viewModel.selectedItems.add(path)) {
+                            viewModel.selectedItems.remove(path)
+                        }
+                    },
                     node = node,
                     onOpen = { child ->
                         navigator.navigate(SonataRoute.Folder(child.sortId))
@@ -137,10 +151,6 @@ fun SonataNavHost(
                     onPlay = { song ->
                         println("Clicked ${song.title}")
                     },
-                    openDetails = { song ->
-                        selectedSong = song
-                    },
-                    onBack = { navigator.goBack() },
                     onScrollDirectionChanged = onScrollDirectionChanged
                 )
             }
@@ -157,9 +167,7 @@ fun SonataNavHost(
                 },
                 searchResults = filteredSongs,
                 onClick = { },
-                onLongClick = { song ->
-                    selectedSong = song
-                }
+                onLongClick = { }
             )
         }
 
@@ -197,11 +205,6 @@ fun SonataNavHost(
     NavDisplay(
         entries = navigationState.toEntries(entryProvider),
         onBack = { navigator.goBack() }
-    )
-
-    SongDetailsDialog(
-        song = selectedSong,
-        onDismiss = { selectedSong = null }
     )
 }
 

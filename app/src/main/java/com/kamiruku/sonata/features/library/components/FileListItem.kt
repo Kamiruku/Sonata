@@ -1,6 +1,7 @@
 package com.kamiruku.sonata.features.library.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -34,10 +36,12 @@ import com.kamiruku.sonata.utils.toTime
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FileListItem(
+    isSelected: Boolean = false,
     node: FileNode,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
+
     /*
     Row for individual file/folder
         Async on far left
@@ -45,6 +49,12 @@ fun FileListItem(
             top - name
             bottom - extension, length, etc
     */
+    val background: Color = if (isSelected) {
+        MaterialTheme.colorScheme.primary.copy(0.5f)
+    } else {
+        Color.Transparent
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -52,7 +62,9 @@ fun FileListItem(
                 onClick = { onClick() },
                 onLongClick = { onLongClick() }
             )
-            .padding(vertical = 16.dp),
+            .padding(vertical = 16.dp)
+            .background(background)
+            .clip(RoundedCornerShape(8.dp)),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         val context = LocalContext.current

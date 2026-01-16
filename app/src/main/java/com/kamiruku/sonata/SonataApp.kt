@@ -38,13 +38,22 @@ fun SonataApp(viewModel: SharedViewModel) {
 
     val navigator = remember { Navigator(navigationState) }
 
+    val inSelectionMode = viewModel.selectedItems.isNotEmpty()
+
     Scaffold(
         bottomBar = {
-            AnimatedBottomBar(
-                visible = bottomBarVisible,
-                navigator = navigator,
-                navigationState = navigationState
-            )
+            if (!inSelectionMode) {
+                AnimatedBottomBar(
+                    visible = bottomBarVisible,
+                    navigator = navigator,
+                    navigationState = navigationState
+                )
+            } else {
+                SelectionBar(
+                    viewModel,
+                    navigator
+                )
+            }
         },
         content = { paddingValues ->
             SonataNavHost(

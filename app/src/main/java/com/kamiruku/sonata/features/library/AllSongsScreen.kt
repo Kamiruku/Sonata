@@ -29,13 +29,16 @@ import com.kamiruku.sonata.Song
 import com.kamiruku.sonata.features.library.components.FileListItem
 import com.kamiruku.sonata.rememberDirectionalLazyListState
 import com.kamiruku.sonata.state.ScrollDirection
+import kotlin.collections.contains
 
 @Composable
 fun AllSongsScreen(
+    selectedItems: Set<String>,
+    inSelectionMode: Boolean,
+    onToggleSelect: (String) -> Unit,
     songList: List<FileNode>,
     onScrollDirectionChanged: (Boolean) -> Unit,
     onPlay: (Song) -> Unit,
-    openDetails: (Song) -> Unit,
 ) {
     val listState = rememberLazyListState()
     val directionState = rememberDirectionalLazyListState(listState)
@@ -77,10 +80,23 @@ fun AllSongsScreen(
                 items = songList,
                 key = { it.sortId }
             ) { node ->
+                val isSelected = node.song?.path in selectedItems
+
                 FileListItem(
+                    isSelected = isSelected,
                     node = node,
-                    onClick = { node.song?.let(onPlay) },
-                    onLongClick = { node.song?.let(openDetails) }
+                    onClick = {
+                        if (inSelectionMode) {
+                            onToggleSelect(node.song?.path ?: "")
+                        } else {
+                            node.song?.let(onPlay)
+                        }
+                    },
+                    onLongClick = {
+                        if (!inSelectionMode) {
+                            onToggleSelect(node.song?.path ?: "")
+                        }
+                    }
                 )
             }
         }

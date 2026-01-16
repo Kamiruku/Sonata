@@ -101,11 +101,11 @@ object FileTreeBuilder {
             .substringAfterLast('/')
             .ifBlank { "root" }
 
-        val root = FileNode(lastFolderName, isFolder = true)
+        val root = FileNode(lastFolderName, isFolder = true, sortId = lastFolderName)
 
         for (song in audioList) {
             val parts = song.path
-                .replace(parentFolder, "")
+                .removePrefix("$parentFolder/")
                 .split('/')
                 .filter { it.isNotBlank() }
 

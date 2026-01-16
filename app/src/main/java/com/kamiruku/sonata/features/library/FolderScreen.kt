@@ -30,11 +30,12 @@ import com.kamiruku.sonata.state.ScrollDirection
 
 @Composable
 fun FolderScreen(
+    selectedItems: Set<String>,
+    inSelectionMode: Boolean,
+    onToggleSelect: (String) -> Unit,
     node: FileNode,
     onOpen: (FileNode) -> Unit,
-    onBack: () -> Unit,
     onPlay: (Song) -> Unit,
-    openDetails: (Song) -> Unit,
     onScrollDirectionChanged: (Boolean) -> Unit
 ) {
     val listState = rememberLazyListState()
@@ -76,17 +77,54 @@ fun FolderScreen(
                 node.children.values.toList(),
                 key = { it.sortId }
             ) { child ->
+                val flat = remember(child.sortId) {
+                    (child.flattenNodes().mapNotNull { it.song?.path }.toSet())
+                }
+
+                val isSelected = if (!child.isFolder) {
+                    child.song?.path in selectedItems
+                } else {
+                    selectedItems.containsAll(flat)
+                }
+
                 if (child.isFolder) {
                     FileListItem(
+                        isSelected = isSelected,
                         node = child,
-                        onClick = { onOpen(child) },
-                        onLongClick = {}
+                        onClick = {
+                            if (inSelectionMode) {
+                                for (path in flat) {
+                                    onToggleSelect(path)
+                                }
+                            } else {
+                                onOpen(child)
+                            }
+                        },
+                        onLongClick = {
+                            if (!inSelectionMode) {
+                                for (path in flat) {
+                                    onToggleSelect(path)
+                                }
+                            }
+                        }
                     )
                 } else {
                     FileListItem(
+                        isSelected = isSelected,
                         node = child,
-                        onClick = { child.song?.let(onPlay) },
-                        onLongClick = { child.song?.let(openDetails) }
+                        onClick = {
+                            if (inSelectionMode) {
+                                onToggleSelect(child.song?.path ?: "")
+                            } else {
+                                child.song?.let(onPlay)
+                            }
+                        },
+                        onLongClick = {
+                            //do nothing if already in selection mode
+                            if (!inSelectionMode) {
+                                onToggleSelect(child.song?.path ?: "")
+                            }
+                        }
                     )
                 }
             }
@@ -108,4 +146,22 @@ fun FolderScreen(
             )
         }
     }
+}
+
+private fun FileNode.flattenNodes(): List<FileNode> {
+    val result = mutableListOf<FileNode>()
+
+    fun dfs(node: FileNode) {
+        if (!node.isFolder) {
+            result += node
+            return
+        }
+
+        node.children.values.forEach { child ->
+            dfs(child)
+        }
+    }
+
+    dfs(this)
+    return result
 }

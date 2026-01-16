@@ -28,6 +28,16 @@ class Navigator(val state: NavigationState){
         }
     }
 
+    fun navigateList(routes: List<NavKey>) {
+        val targetTopLevel = routes[0]
+        state.topLevelRoute = targetTopLevel
+
+        state.backStacks[targetTopLevel]?.let { stack ->
+            stack.clear()
+            stack.addAll(routes)
+        }
+    }
+
     fun goBack() {
         val currentStack = state.backStacks[state.topLevelRoute] ?:
         error("Stack for ${state.topLevelRoute} not found")
