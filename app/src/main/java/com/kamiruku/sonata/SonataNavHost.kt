@@ -45,8 +45,9 @@ fun SonataNavHost(
     val root by viewModel.rootNode.collectAsState()
     val songList by viewModel.songList.collectAsState()
 
-    val inSelectionMode by remember {
-        derivedStateOf { viewModel.selectedItems.isNotEmpty() }
+    val inSelectionMode by viewModel.inSelectionMode.collectAsState()
+    LaunchedEffect(viewModel.selectedItems) {
+        if (viewModel.selectedItems.isNotEmpty()) viewModel.setSelectionMode(true)
     }
 
     val transitionMetadata = NavDisplay.transitionSpec {

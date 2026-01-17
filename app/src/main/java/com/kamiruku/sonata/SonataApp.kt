@@ -19,7 +19,7 @@ fun SonataApp(viewModel: SharedViewModel) {
 
     val uiState by viewModel.uiState.collectAsState()
 
-    val initialRoute = remember {
+    val initialRoute = remember(uiState) {
         when (uiState) {
             LibraryUIState.Empty -> SonataRoute.SettingsHome
             else -> SonataRoute.LibraryHome
@@ -38,7 +38,7 @@ fun SonataApp(viewModel: SharedViewModel) {
 
     val navigator = remember { Navigator(navigationState) }
 
-    val inSelectionMode = viewModel.selectedItems.isNotEmpty()
+    val inSelectionMode by viewModel.inSelectionMode.collectAsState()
 
     Scaffold(
         bottomBar = {
