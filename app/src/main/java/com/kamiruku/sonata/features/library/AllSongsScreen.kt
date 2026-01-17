@@ -4,6 +4,7 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,7 +30,6 @@ import com.kamiruku.sonata.Song
 import com.kamiruku.sonata.features.library.components.FileListItem
 import com.kamiruku.sonata.rememberDirectionalLazyListState
 import com.kamiruku.sonata.state.ScrollDirection
-import kotlin.collections.contains
 
 @Composable
 fun AllSongsScreen(
@@ -46,6 +46,12 @@ fun AllSongsScreen(
     val atTop by remember {
         derivedStateOf {
             listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
+        }
+    }
+
+    val isBiggerThanScreen by remember {
+        derivedStateOf {
+            listState.canScrollForward || listState.canScrollBackward
         }
     }
 
@@ -99,6 +105,12 @@ fun AllSongsScreen(
                         }
                     }
                 )
+            }
+
+            if (isBiggerThanScreen) {
+                item {
+                    Spacer(Modifier.padding(75.dp))
+                }
             }
         }
 
