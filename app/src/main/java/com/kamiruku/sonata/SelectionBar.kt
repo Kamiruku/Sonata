@@ -33,15 +33,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation3.runtime.NavKey
 import com.kamiruku.sonata.navigation.Navigator
 import com.kamiruku.sonata.navigation.SonataRoute
 import com.kamiruku.sonata.ui.components.SongDetailsDialog
-import kotlin.math.roundToInt
 
 @Composable
 fun SelectionBar(
@@ -85,7 +82,7 @@ fun SelectionBar(
                 onClick = {
                     viewModel.clearSelected()
                 },
-                modifier = Modifier.align(Alignment.CenterEnd)
+                modifier = Modifier.align(Alignment.CenterEnd).scale(0.8f)
             ) {
                 Icon(
                     Icons.Outlined.Close,

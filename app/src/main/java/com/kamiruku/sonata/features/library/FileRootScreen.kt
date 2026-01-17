@@ -21,12 +21,7 @@ fun FileRootScreen(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            top = 50.dp,
-            bottom = 50.dp,
-            start = 25.dp,
-            end = 25.dp
-        ),
+        contentPadding = PaddingValues(vertical = 50.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
@@ -34,6 +29,7 @@ fun FileRootScreen(
                 text = "Folder Hierarchy",
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(horizontal = 25.dp)
                     .padding(vertical = 30.dp),
                 fontSize = 22.sp
             )

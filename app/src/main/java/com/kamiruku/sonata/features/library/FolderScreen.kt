@@ -69,12 +69,7 @@ fun FolderScreen(
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                top = 50.dp,
-                bottom = 50.dp,
-                start = 25.dp,
-                end = 25.dp
-            ),
+            contentPadding = PaddingValues(vertical = 50.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item(key = node.sortId) {

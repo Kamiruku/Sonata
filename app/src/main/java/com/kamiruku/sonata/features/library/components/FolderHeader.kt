@@ -45,6 +45,7 @@ fun FolderHeader(
         modifier = Modifier
             .height(200.dp)
             .fillMaxWidth()
+            .padding(horizontal = 25.dp)
             /*
             .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
              */

@@ -61,6 +61,7 @@ fun FileListItem(
                     onClick = { onClick() },
                     onLongClick = { onLongClick() }
                 )
+                .padding(horizontal = 25.dp)
                 .padding(vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -143,6 +144,7 @@ fun FileListItem(
             Box(
                 Modifier
                     .align(Alignment.CenterStart)
+                    .padding(horizontal = 25.dp)
                     .padding(10.dp)
                     .background(MaterialTheme.colorScheme.background, RoundedCornerShape(4.dp))
             ) {
@@ -161,6 +163,7 @@ fun FileListItem(
                 Box(
                     Modifier
                         .padding(vertical = 16.dp)
+                        .padding(horizontal = 25.dp)
                         .size(70.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(MaterialTheme.colorScheme.primary.copy(0.3f))

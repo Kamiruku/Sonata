@@ -69,7 +69,7 @@ fun AllSongsScreen(
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(25.dp),
+            contentPadding = PaddingValues(vertical = 25.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item {
@@ -77,6 +77,7 @@ fun AllSongsScreen(
                     text = "All Songs",
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(horizontal = 25.dp)
                         .padding(vertical = 30.dp),
                     fontSize = 22.sp
                 )
