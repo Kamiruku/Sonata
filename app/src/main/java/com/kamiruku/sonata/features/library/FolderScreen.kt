@@ -33,6 +33,7 @@ fun FolderScreen(
     selectedItems: Set<String>,
     inSelectionMode: Boolean,
     onToggleSelect: (String) -> Unit,
+    onToggleSelectFolder: (Set<String>) -> Unit,
     node: FileNode,
     onOpen: (FileNode) -> Unit,
     onPlay: (Song) -> Unit,
@@ -90,27 +91,25 @@ fun FolderScreen(
                 if (child.isFolder) {
                     FileListItem(
                         isSelected = isSelected,
+                        inSelectionMode = inSelectionMode,
                         node = child,
                         onClick = {
                             if (inSelectionMode) {
-                                for (path in flat) {
-                                    onToggleSelect(path)
-                                }
+                                onToggleSelectFolder(flat)
                             } else {
                                 onOpen(child)
                             }
                         },
                         onLongClick = {
                             if (!inSelectionMode) {
-                                for (path in flat) {
-                                    onToggleSelect(path)
-                                }
+                                onToggleSelectFolder(flat)
                             }
                         }
                     )
                 } else {
                     FileListItem(
                         isSelected = isSelected,
+                        inSelectionMode = inSelectionMode,
                         node = child,
                         onClick = {
                             if (inSelectionMode) {

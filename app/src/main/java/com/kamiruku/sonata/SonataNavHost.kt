@@ -12,6 +12,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -43,8 +44,6 @@ fun SonataNavHost(
 
     val root by viewModel.rootNode.collectAsState()
     val songList by viewModel.songList.collectAsState()
-
-    var selectedSong by remember { mutableStateOf<Song?>(null) }
 
     val inSelectionMode by remember {
         derivedStateOf { viewModel.selectedItems.isNotEmpty() }
@@ -81,6 +80,10 @@ fun SonataNavHost(
 
     val entryProvider = entryProvider {
         entry<SonataRoute.LibraryHome> {
+            LaunchedEffect(it) {
+                viewModel.clearSelected()
+            }
+
             LibraryScreen(
                 buttonEnabled = buttonEnabled,
                 onAllSongsClick = { navigator.navigate(SonataRoute.AllSongs) },
@@ -91,6 +94,10 @@ fun SonataNavHost(
         entry<SonataRoute.AllSongs>(
             metadata = transitionMetadata
         ) {
+            LaunchedEffect(it) {
+                viewModel.clearSelected()
+            }
+
             SwipeBackContainer(
                 onBack = { navigator.goBack() }
             ) {
@@ -98,9 +105,7 @@ fun SonataNavHost(
                     selectedItems = viewModel.selectedItems,
                     inSelectionMode = inSelectionMode,
                     onToggleSelect = { path ->
-                        if (!viewModel.selectedItems.add(path)) {
-                            viewModel.selectedItems.remove(path)
-                        }
+                        viewModel.toggleSelect(path)
                     },
                     songList = songList,
                     onScrollDirectionChanged = onScrollDirectionChanged,
@@ -115,6 +120,10 @@ fun SonataNavHost(
         entry<SonataRoute.FolderRoot>(
             metadata = transitionMetadata
         ) {
+            LaunchedEffect(it) {
+                viewModel.clearSelected()
+            }
+
             root?.let {
                 SwipeBackContainer(
                     onBack = { navigator.goBack() }
@@ -133,6 +142,11 @@ fun SonataNavHost(
             metadata = transitionMetadata
         ) { key ->
             val node = viewModel.findNode(key.id) ?: return@entry
+
+            LaunchedEffect(key.id) {
+                viewModel.clearSelected()
+            }
+
             SwipeBackContainer(
                 onBack = { navigator.goBack() }
             ) {
@@ -140,9 +154,11 @@ fun SonataNavHost(
                     selectedItems = viewModel.selectedItems,
                     inSelectionMode = inSelectionMode,
                     onToggleSelect = { path ->
-                        if (!viewModel.selectedItems.add(path)) {
-                            viewModel.selectedItems.remove(path)
-                        }
+                        viewModel.toggleSelect(path)
+                    },
+                    onToggleSelectFolder = { paths ->
+                        viewModel.toggleSelect(paths)
+
                     },
                     node = node,
                     onOpen = { child ->

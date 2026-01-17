@@ -40,9 +40,9 @@ class SharedViewModel(
 
     val query = MutableStateFlow("")
     var filteredSongs by mutableStateOf<List<Song>>(emptyList())
-    val selectedItems = mutableStateSetOf<String>()
+    var selectedItems by mutableStateOf<Set<String>>(emptySet())
 
-    @Volatile private var dbSongList: List<Song>? = null
+    private var dbSongList: List<Song>? = null
 
     fun setList(rootNode: FileNode) {
         _rootNode.value = rootNode
@@ -108,6 +108,22 @@ class SharedViewModel(
             val rootNode = FileTreeBuilder.buildTree(songList)
             setList(rootNode)
         }
+    }
+
+    fun toggleSelect(path: String) {
+        selectedItems =
+            if (path in selectedItems) selectedItems - path
+            else selectedItems + path
+    }
+
+    fun toggleSelect(paths: Set<String>) {
+        selectedItems =
+            if (selectedItems.containsAll(paths)) selectedItems - paths
+            else selectedItems + paths
+    }
+
+    fun clearSelected() {
+        selectedItems = emptySet()
     }
 
     init {

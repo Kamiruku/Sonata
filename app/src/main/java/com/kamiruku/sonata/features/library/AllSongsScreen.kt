@@ -84,6 +84,7 @@ fun AllSongsScreen(
 
                 FileListItem(
                     isSelected = isSelected,
+                    inSelectionMode = inSelectionMode,
                     node = node,
                     onClick = {
                         if (inSelectionMode) {

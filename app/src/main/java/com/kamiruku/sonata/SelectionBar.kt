@@ -1,6 +1,7 @@
 package com.kamiruku.sonata
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -10,6 +11,7 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,15 +30,27 @@ fun SelectionBar(
     navigator: Navigator
 ) {
     var selectedSong by remember { mutableStateOf<Song?>(null) }
+    val selectedItems = viewModel.selectedItems
 
-    Row(
+    Column(
         Modifier
             .fillMaxWidth()
-            .padding(25.dp)
-            .background(MaterialTheme.colorScheme.background)
+            .background(MaterialTheme.colorScheme.primary.copy(0.5f))
     ) {
-        if (viewModel.selectedItems.size == 1) {
+        Text(
+            text = selectedItems.size.toString(),
+            Modifier.padding(15.dp)
+        )
+
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(25.dp)
+                .padding(vertical = 25.dp)
+                .background(MaterialTheme.colorScheme.background)
+        ) {
             IconButton(
+                enabled = viewModel.selectedItems.size == 1,
                 onClick = {
                     selectedSong = viewModel.findNode(viewModel.selectedItems.single())?.song
                 }
@@ -48,6 +62,7 @@ fun SelectionBar(
             }
 
             IconButton(
+                enabled = viewModel.selectedItems.size == 1,
                 onClick = {
                     val curPath = viewModel.selectedItems.single()
                     val splitPath = curPath.split('/').filter { it.isNotEmpty() }
