@@ -1,5 +1,6 @@
 package com.kamiruku.sonata
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -24,6 +25,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,16 +41,39 @@ import androidx.navigation3.runtime.NavKey
 import com.kamiruku.sonata.navigation.Navigator
 import com.kamiruku.sonata.navigation.SonataRoute
 import com.kamiruku.sonata.ui.components.SongDetailsDialog
+import com.kamiruku.sonata.utils.flattenNodes
 
 @Composable
 fun SelectionBar(
     viewModel: SharedViewModel,
+    state: NavigationState,
     navigator: Navigator
 ) {
     var selectedSong by remember { mutableStateOf<Song?>(null) }
     val selectedItems = viewModel.selectedItems
 
+    val songList by viewModel.songList.collectAsState()
+    val allPaths = songList.mapNotNull { it.song?.path }.toSet()
+
+    val currentStack = state.backStacks[state.topLevelRoute]
+    val flat = when (val currentRoute = currentStack?.last()) {
+        is SonataRoute.Folder -> {
+            val sortId = currentRoute.id
+            val node = viewModel.findNode(sortId)
+            node?.flattenNodes()?.mapNotNull { it.song?.path }?.toSet() ?: emptySet()
+        }
+        is SonataRoute.AllSongs -> {
+            allPaths
+        }
+        else -> emptySet()
+    }
+
     val BUTTON_SIZE = 60.dp
+
+    BackHandler {
+        viewModel.clearSelected()
+        viewModel.setSelectionMode(false)
+    }
 
     Column(
         Modifier
@@ -67,9 +92,22 @@ fun SelectionBar(
                 .padding(horizontal = 25.dp)
         ) {
             Text(
-                text = "Selected",
+                text =
+                    if (selectedItems.containsAll(flat)) "Remove All"
+                    else "Select All"
+                ,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.align(Alignment.CenterStart)
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) {
+                        if (selectedItems.containsAll(flat)) {
+                            viewModel.clearSelected()
+                        } else {
+                            viewModel.selectedItems = flat
+                        }
+                    }
             )
 
             Text(
@@ -81,6 +119,7 @@ fun SelectionBar(
             IconButton(
                 onClick = {
                     viewModel.clearSelected()
+                    viewModel.setSelectionMode(false)
                 },
                 modifier = Modifier.align(Alignment.CenterEnd).scale(0.8f)
             ) {

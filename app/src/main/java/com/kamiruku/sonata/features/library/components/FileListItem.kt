@@ -144,8 +144,7 @@ fun FileListItem(
             Box(
                 Modifier
                     .align(Alignment.CenterStart)
-                    .padding(horizontal = 25.dp)
-                    .padding(10.dp)
+                    .padding(35.dp)
                     .background(MaterialTheme.colorScheme.background, RoundedCornerShape(4.dp))
             ) {
                 Icon(

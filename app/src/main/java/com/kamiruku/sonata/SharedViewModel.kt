@@ -127,7 +127,6 @@ class SharedViewModel(
 
     fun clearSelected() {
         selectedItems = emptySet()
-        _inSelectionMode.value = false
     }
 
     fun setSelectionMode(mode: Boolean) {

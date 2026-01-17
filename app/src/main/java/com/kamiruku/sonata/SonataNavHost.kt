@@ -14,12 +14,8 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.kamiruku.sonata.features.library.AllSongsScreen
@@ -83,6 +79,7 @@ fun SonataNavHost(
         entry<SonataRoute.LibraryHome> {
             LaunchedEffect(it) {
                 viewModel.clearSelected()
+                viewModel.setSelectionMode(false)
             }
 
             LibraryScreen(
@@ -97,6 +94,7 @@ fun SonataNavHost(
         ) {
             LaunchedEffect(it) {
                 viewModel.clearSelected()
+                viewModel.setSelectionMode(false)
             }
 
             SwipeBackContainer(
@@ -123,6 +121,7 @@ fun SonataNavHost(
         ) {
             LaunchedEffect(it) {
                 viewModel.clearSelected()
+                viewModel.setSelectionMode(false)
             }
 
             root?.let {
@@ -146,6 +145,7 @@ fun SonataNavHost(
 
             LaunchedEffect(key.id) {
                 viewModel.clearSelected()
+                viewModel.setSelectionMode(false)
             }
 
             SwipeBackContainer(

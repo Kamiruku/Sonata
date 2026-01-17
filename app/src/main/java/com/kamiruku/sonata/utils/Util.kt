@@ -3,6 +3,7 @@ package com.kamiruku.sonata.utils
 import android.content.ContentUris
 import android.net.Uri
 import android.provider.MediaStore
+import com.kamiruku.sonata.FileNode
 import java.util.Locale
 
 fun getAlbumArt(albumId: Long): Uri =
@@ -22,4 +23,22 @@ fun Long.toTime(): String {
 
     return if (hours == 0L) String.format(Locale.US, "%02d:%02d", mins, secs)
     else String.format(Locale.US, "%02d:%02d:%02d", hours, mins, secs)
+}
+
+fun FileNode.flattenNodes(): List<FileNode> {
+    val result = mutableListOf<FileNode>()
+
+    fun dfs(node: FileNode) {
+        if (!node.isFolder) {
+            result += node
+            return
+        }
+
+        node.children.values.forEach { child ->
+            dfs(child)
+        }
+    }
+
+    dfs(this)
+    return result
 }

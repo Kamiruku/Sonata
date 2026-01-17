@@ -28,6 +28,7 @@ import com.kamiruku.sonata.features.library.components.FileListItem
 import com.kamiruku.sonata.features.library.components.FolderHeader
 import com.kamiruku.sonata.rememberDirectionalLazyListState
 import com.kamiruku.sonata.state.ScrollDirection
+import com.kamiruku.sonata.utils.flattenNodes
 
 @Composable
 fun FolderScreen(
@@ -153,22 +154,4 @@ fun FolderScreen(
             )
         }
     }
-}
-
-private fun FileNode.flattenNodes(): List<FileNode> {
-    val result = mutableListOf<FileNode>()
-
-    fun dfs(node: FileNode) {
-        if (!node.isFolder) {
-            result += node
-            return
-        }
-
-        node.children.values.forEach { child ->
-            dfs(child)
-        }
-    }
-
-    dfs(this)
-    return result
 }

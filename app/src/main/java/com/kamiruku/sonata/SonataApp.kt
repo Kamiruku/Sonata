@@ -51,6 +51,7 @@ fun SonataApp(viewModel: SharedViewModel) {
             } else {
                 SelectionBar(
                     viewModel,
+                    navigationState,
                     navigator
                 )
             }
