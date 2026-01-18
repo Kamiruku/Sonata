@@ -59,7 +59,7 @@ class SharedViewModel(
     }
 
     private fun buildIndex(node: FileNode) {
-        nodeIndex[node.sortId] = node
+        nodeIndex[node.path] = node
         for (child in node.children.values) {
             buildIndex(child)
         }

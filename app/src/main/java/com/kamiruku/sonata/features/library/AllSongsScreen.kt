@@ -86,7 +86,7 @@ fun AllSongsScreen(
 
             items(
                 items = songList,
-                key = { it.sortId }
+                key = { it.path }
             ) { node ->
                 val isSelected = node.song?.path in selectedItems
 

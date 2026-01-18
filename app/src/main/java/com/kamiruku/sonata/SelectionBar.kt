@@ -60,8 +60,8 @@ fun SelectionBar(
     val currentStack = state.backStacks[state.topLevelRoute]
     val flat = when (val currentRoute = currentStack?.last()) {
         is SonataRoute.Folder -> {
-            val sortId = currentRoute.id
-            val node = viewModel.findNode(sortId)
+            val path = currentRoute.path
+            val node = viewModel.findNode(path)
             node?.flattenNodes()?.mapNotNull { it.song?.path }?.toSet() ?: emptySet()
         }
         is SonataRoute.AllSongs -> {

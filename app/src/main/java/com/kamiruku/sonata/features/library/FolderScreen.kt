@@ -74,15 +74,15 @@ fun FolderScreen(
             contentPadding = PaddingValues(vertical = 50.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            item(key = node.sortId) {
+            item(key = node.path) {
                 FolderHeader(node)
             }
 
             items(
                 node.children.values.toList(),
-                key = { it.sortId }
+                key = { it.path }
             ) { child ->
-                val flat = remember(child.sortId) {
+                val flat = remember(child.path) {
                     (child.flattenNodes().mapNotNull { it.song?.path }.toSet())
                 }
 

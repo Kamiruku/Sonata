@@ -129,7 +129,7 @@ fun SonataNavHost(
                     FileRootScreen(
                         node = it,
                         onOpen = { node ->
-                            navigator.navigate(SonataRoute.Folder(node.sortId))
+                            navigator.navigate(SonataRoute.Folder(node.path))
                         }
                     )
                 }
@@ -139,9 +139,9 @@ fun SonataNavHost(
         entry<SonataRoute.Folder>(
             metadata = transitionMetadata
         ) { key ->
-            val node = viewModel.findNode(key.id) ?: return@entry
+            val node = viewModel.findNode(key.path) ?: return@entry
 
-            LaunchedEffect(key.id) {
+            LaunchedEffect(key.path) {
                 viewModel.clearSelected()
             }
 
@@ -160,7 +160,7 @@ fun SonataNavHost(
                     },
                     node = node,
                     onOpen = { child ->
-                        navigator.navigate(SonataRoute.Folder(child.sortId))
+                        navigator.navigate(SonataRoute.Folder(child.path))
                     },
                     onPlay = { song ->
                         println("Clicked ${song.title}")

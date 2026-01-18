@@ -106,7 +106,7 @@ fun FileListItem(
 
                 )
 
-                val subText = remember(node.sortId) {
+                val subText = remember(node.path) {
                     if (!node.isFolder) {
                         val ext = node.song?.path?.substring(
                             node.song?.path?.lastIndexOf('.')?.plus(1) ?: 0
