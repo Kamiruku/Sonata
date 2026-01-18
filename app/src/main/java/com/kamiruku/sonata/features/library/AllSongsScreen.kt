@@ -1,5 +1,6 @@
 package com.kamiruku.sonata.features.library
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -110,7 +111,9 @@ fun AllSongsScreen(
 
             if (isBiggerThanScreen) {
                 item {
-                    Spacer(Modifier.padding(75.dp))
+                    AnimatedVisibility(inSelectionMode) {
+                        Spacer(Modifier.padding(75.dp))
+                    }
                 }
             }
         }

@@ -79,7 +79,6 @@ fun SonataNavHost(
         entry<SonataRoute.LibraryHome> {
             LaunchedEffect(it) {
                 viewModel.clearSelected()
-                viewModel.setSelectionMode(false)
             }
 
             LibraryScreen(
@@ -94,7 +93,6 @@ fun SonataNavHost(
         ) {
             LaunchedEffect(it) {
                 viewModel.clearSelected()
-                viewModel.setSelectionMode(false)
             }
 
             SwipeBackContainer(
@@ -145,7 +143,6 @@ fun SonataNavHost(
 
             LaunchedEffect(key.id) {
                 viewModel.clearSelected()
-                viewModel.setSelectionMode(false)
             }
 
             SwipeBackContainer(
@@ -177,14 +174,24 @@ fun SonataNavHost(
             val textFieldState = rememberTextFieldState()
             val filteredSongs = viewModel.filteredSongs
 
+            LaunchedEffect(it) {
+                viewModel.clearSelected()
+            }
+
             SearchScreen(
                 textFieldState,
                 onQueryChange = {
                     viewModel.query.value = textFieldState.text.toString()
                 },
                 searchResults = filteredSongs,
-                onClick = { },
-                onLongClick = { }
+                onClick = { song ->
+                    println(song.title)
+                },
+                selectedItems = viewModel.selectedItems,
+                inSelectionMode = inSelectionMode,
+                onToggleSelect = { path ->
+                    viewModel.toggleSelect(path)
+                },
             )
         }
 

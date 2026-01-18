@@ -125,8 +125,10 @@ class SharedViewModel(
             else selectedItems + paths
     }
 
-    fun clearSelected() {
+    fun clearSelected(mode: Boolean = false) {
+        //if mode = true, keep select screen open even after clearing
         selectedItems = emptySet()
+        setSelectionMode(mode)
     }
 
     fun setSelectionMode(mode: Boolean) {

@@ -55,6 +55,8 @@ fun SelectionBar(
     val songList by viewModel.songList.collectAsState()
     val allPaths = songList.mapNotNull { it.song?.path }.toSet()
 
+    val filteredSongs = viewModel.filteredSongs
+
     val currentStack = state.backStacks[state.topLevelRoute]
     val flat = when (val currentRoute = currentStack?.last()) {
         is SonataRoute.Folder -> {
@@ -65,6 +67,9 @@ fun SelectionBar(
         is SonataRoute.AllSongs -> {
             allPaths
         }
+        is SonataRoute.Search -> {
+            filteredSongs.map { it.path }.toSet()
+        }
         else -> emptySet()
     }
 
@@ -72,7 +77,6 @@ fun SelectionBar(
 
     BackHandler {
         viewModel.clearSelected()
-        viewModel.setSelectionMode(false)
     }
 
     Column(
@@ -94,8 +98,7 @@ fun SelectionBar(
             Text(
                 text =
                     if (selectedItems.containsAll(flat)) "Remove All"
-                    else "Select All"
-                ,
+                    else "Select All",
                 textAlign = TextAlign.Center,
                 modifier = Modifier.align(Alignment.CenterStart)
                     .clickable(
@@ -103,7 +106,7 @@ fun SelectionBar(
                         interactionSource = remember { MutableInteractionSource() }
                     ) {
                         if (selectedItems.containsAll(flat)) {
-                            viewModel.clearSelected()
+                            viewModel.clearSelected(true)
                         } else {
                             viewModel.selectedItems = flat
                         }
@@ -119,7 +122,6 @@ fun SelectionBar(
             IconButton(
                 onClick = {
                     viewModel.clearSelected()
-                    viewModel.setSelectionMode(false)
                 },
                 modifier = Modifier.align(Alignment.CenterEnd).scale(0.8f)
             ) {
