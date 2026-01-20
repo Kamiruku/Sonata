@@ -29,14 +29,14 @@ import com.kamiruku.sonata.features.library.components.FileListItem
 import com.kamiruku.sonata.features.library.components.FolderHeader
 import com.kamiruku.sonata.rememberDirectionalLazyListState
 import com.kamiruku.sonata.state.ScrollDirection
-import com.kamiruku.sonata.utils.flattenNodes
 
 @Composable
 fun FolderScreen(
+    allPaths: List<String>,
     selectedItems: Set<String>,
     inSelectionMode: Boolean,
     onToggleSelect: (String) -> Unit,
-    onToggleSelectFolder: (Set<String>) -> Unit,
+    onToggleSelectFolder: (List<String>) -> Unit,
     node: FileNode,
     onOpen: (FileNode) -> Unit,
     onPlay: (Song) -> Unit,
@@ -82,8 +82,8 @@ fun FolderScreen(
                 node.children.values.toList(),
                 key = { it.path }
             ) { child ->
-                val flat = remember(child.path) {
-                    (child.flattenNodes().mapNotNull { it.song?.path }.toSet())
+                val flat = remember(child.path, allPaths) {
+                    allPaths.filter { it.startsWith(child.path) }
                 }
 
                 val isSelected = if (!child.isFolder) {

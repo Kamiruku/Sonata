@@ -40,6 +40,7 @@ fun SonataNavHost(
 
     val root by viewModel.rootNode.collectAsState()
     val songList by viewModel.songList.collectAsState()
+    val allSongsPath = songList.mapNotNull { it.song?.path }
 
     val inSelectionMode by viewModel.inSelectionMode.collectAsState()
     LaunchedEffect(viewModel.selectedItems) {
@@ -77,7 +78,7 @@ fun SonataNavHost(
 
     val entryProvider = entryProvider {
         entry<SonataRoute.LibraryHome> {
-            LaunchedEffect(it) {
+            LaunchedEffect(Unit) {
                 viewModel.clearSelected()
             }
 
@@ -91,7 +92,7 @@ fun SonataNavHost(
         entry<SonataRoute.AllSongs>(
             metadata = transitionMetadata
         ) {
-            LaunchedEffect(it) {
+            LaunchedEffect(Unit) {
                 viewModel.clearSelected()
             }
 
@@ -117,7 +118,7 @@ fun SonataNavHost(
         entry<SonataRoute.FolderRoot>(
             metadata = transitionMetadata
         ) {
-            LaunchedEffect(it) {
+            LaunchedEffect(Unit) {
                 viewModel.clearSelected()
                 viewModel.setSelectionMode(false)
             }
@@ -149,6 +150,7 @@ fun SonataNavHost(
                 onBack = { navigator.goBack() }
             ) {
                 FolderScreen(
+                    allPaths = allSongsPath,
                     selectedItems = viewModel.selectedItems,
                     inSelectionMode = inSelectionMode,
                     onToggleSelect = { path ->
@@ -174,7 +176,7 @@ fun SonataNavHost(
             val textFieldState = rememberTextFieldState()
             val filteredSongs = viewModel.filteredSongs
 
-            LaunchedEffect(it) {
+            LaunchedEffect(Unit) {
                 viewModel.clearSelected()
             }
 

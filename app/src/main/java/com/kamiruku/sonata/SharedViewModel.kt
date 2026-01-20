@@ -119,10 +119,14 @@ class SharedViewModel(
             else selectedItems + path
     }
 
-    fun toggleSelect(paths: Set<String>) {
+    fun toggleSelect(paths: List<String>) {
         selectedItems =
             if (selectedItems.containsAll(paths)) selectedItems - paths
             else selectedItems + paths
+    }
+
+    fun setSelected(paths: List<String>) {
+        selectedItems = paths.toSet()
     }
 
     fun clearSelected(mode: Boolean = false) {

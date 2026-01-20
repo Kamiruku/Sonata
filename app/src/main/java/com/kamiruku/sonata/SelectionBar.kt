@@ -41,7 +41,6 @@ import androidx.navigation3.runtime.NavKey
 import com.kamiruku.sonata.navigation.Navigator
 import com.kamiruku.sonata.navigation.SonataRoute
 import com.kamiruku.sonata.ui.components.SongDetailsDialog
-import com.kamiruku.sonata.utils.flattenNodes
 
 @Composable
 fun SelectionBar(
@@ -53,29 +52,30 @@ fun SelectionBar(
     val selectedItems = viewModel.selectedItems
 
     val songList by viewModel.songList.collectAsState()
-    val allPaths = songList.mapNotNull { it.song?.path }.toSet()
+    val allPaths = songList.mapNotNull { it.song?.path }
 
     val filteredSongs = viewModel.filteredSongs
 
     val currentStack = state.backStacks[state.topLevelRoute]
     val flat = when (val currentRoute = currentStack?.last()) {
         is SonataRoute.Folder -> {
-            val path = currentRoute.path
-            val node = viewModel.findNode(path)
-            node?.flattenNodes()?.mapNotNull { it.song?.path }?.toSet() ?: emptySet()
+            val curPath = currentRoute.path
+            allPaths.filter { it.startsWith(curPath) }
         }
         is SonataRoute.AllSongs -> {
             allPaths
         }
         is SonataRoute.Search -> {
-            filteredSongs.map { it.path }.toSet()
+            filteredSongs.map { it.path }
         }
-        else -> emptySet()
+        else -> emptyList()
     }
 
     val BUTTON_SIZE = 60.dp
 
-    BackHandler {
+    val inSelectionMode by viewModel.inSelectionMode.collectAsState()
+
+    BackHandler(enabled = inSelectionMode) {
         viewModel.clearSelected()
     }
 
@@ -108,7 +108,7 @@ fun SelectionBar(
                         if (selectedItems.containsAll(flat)) {
                             viewModel.clearSelected(true)
                         } else {
-                            viewModel.selectedItems = flat
+                            viewModel.setSelected(flat)
                         }
                     }
             )
