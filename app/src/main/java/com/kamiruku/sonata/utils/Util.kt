@@ -42,3 +42,10 @@ fun FileNode.flattenNodes(): List<FileNode> {
     dfs(this)
     return result
 }
+
+fun List<String>.findFirstIndex(curPath: String): Int {
+    var index = this.binarySearch(curPath)
+    //will never find an exact match since we are finding a folder in a list of file paths
+    index = - (index + 1)
+    return index
+}

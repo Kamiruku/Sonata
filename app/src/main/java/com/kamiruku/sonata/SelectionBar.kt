@@ -41,6 +41,7 @@ import androidx.navigation3.runtime.NavKey
 import com.kamiruku.sonata.navigation.Navigator
 import com.kamiruku.sonata.navigation.SonataRoute
 import com.kamiruku.sonata.ui.components.SongDetailsDialog
+import com.kamiruku.sonata.utils.findFirstIndex
 
 @Composable
 fun SelectionBar(
@@ -57,18 +58,23 @@ fun SelectionBar(
     val filteredSongs = viewModel.filteredSongs
 
     val currentStack = state.backStacks[state.topLevelRoute]
-    val flat = when (val currentRoute = currentStack?.last()) {
-        is SonataRoute.Folder -> {
-            val curPath = currentRoute.path
-            allPaths.filter { it.startsWith(curPath) }
+    val currentRoute = currentStack?.last()
+    val flat = remember(currentRoute) {
+        when (val currentRoute = currentStack?.last()) {
+            is SonataRoute.Folder -> {
+                val curPath = currentRoute.path
+                val curNode = viewModel.findNode(curPath) ?: return@remember emptyList()
+                val startIndex = allPaths.findFirstIndex(curPath)
+                allPaths.subList(startIndex, startIndex + curNode.musicTotal)
+            }
+            is SonataRoute.AllSongs -> {
+                allPaths
+            }
+            is SonataRoute.Search -> {
+                filteredSongs.map { it.path }
+            }
+            else -> emptyList()
         }
-        is SonataRoute.AllSongs -> {
-            allPaths
-        }
-        is SonataRoute.Search -> {
-            filteredSongs.map { it.path }
-        }
-        else -> emptyList()
     }
 
     val BUTTON_SIZE = 60.dp

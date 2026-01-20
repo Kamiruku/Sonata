@@ -51,7 +51,7 @@ class SharedViewModel(
         _rootNode.value = rootNode
         nodeIndex.clear()
         buildIndex(rootNode)
-        _songList.value = rootNode.flattenSongs()
+        _songList.value = rootNode.flattenSongs().sortedBy { it.path }
 
         _uiState.value =
             if (songList.value.isEmpty()) LibraryUIState.Empty

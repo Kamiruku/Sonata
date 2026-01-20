@@ -29,6 +29,7 @@ import com.kamiruku.sonata.features.library.components.FileListItem
 import com.kamiruku.sonata.features.library.components.FolderHeader
 import com.kamiruku.sonata.rememberDirectionalLazyListState
 import com.kamiruku.sonata.state.ScrollDirection
+import com.kamiruku.sonata.utils.findFirstIndex
 
 @Composable
 fun FolderScreen(
@@ -83,7 +84,12 @@ fun FolderScreen(
                 key = { it.path }
             ) { child ->
                 val flat = remember(child.path, allPaths) {
-                    allPaths.filter { it.startsWith(child.path) }
+                    if (child.isFolder) {
+                        val startIndex = allPaths.findFirstIndex(child.path)
+                        allPaths.subList(startIndex, startIndex + child.musicTotal)
+                    } else {
+                        emptyList()
+                    }
                 }
 
                 val isSelected = if (!child.isFolder) {
