@@ -54,7 +54,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *) {
 jobjectArray strListToJniArray(JNIEnv *env, const TagLib::StringList &stringList) {
     jobjectArray array = env->NewObjectArray(stringList.size(),g_stringClass, nullptr);
 
-    for (size_t i = 0; i < stringList.size(); ++i) {
+    for (size_t i { 0 }; i < stringList.size(); ++i) {
         jstring str = env->NewStringUTF(stringList[i].toCString(true));
         env->SetObjectArrayElement(array, i, str);
         env->DeleteLocalRef(str);
@@ -132,7 +132,7 @@ Java_com_kamiruku_sonata_taglib_TagLib_getDetails(JNIEnv *env, jobject thiz, jin
 
     if (!file.isNull()) {
         auto props = file.audioProperties();
-        jint length = -1, bitrate = -1, sampleRate = -1, channels = -1, bitsPerSample = -1;
+        jint length { -1 }, bitrate { -1 }, sampleRate { -1 }, channels { -1 }, bitsPerSample { -1 };
 
         if (props) {
             length = props->lengthInMilliseconds();
@@ -202,7 +202,7 @@ Java_com_kamiruku_sonata_taglib_TagLib_getAudioProperties(JNIEnv* env,jobject th
     TagLib::File *f = createByExtension(filename, stream.get());
     TagLib::FileRef file(f);
 
-    jint values[5] = {-1, -1, -1, -1, -1};
+    jint values[5] {-1, -1, -1, -1, -1};
 
     if (!file.isNull()) {
         auto props = file.audioProperties();

@@ -40,7 +40,9 @@ fun SonataNavHost(
 
     val root by viewModel.rootNode.collectAsState()
     val songList by viewModel.songList.collectAsState()
-    val allSongsPath = songList.mapNotNull { it.song?.path }
+    val allSongsPath = remember(songList) {
+        songList.mapNotNull { it.song?.path }
+    }
 
     val inSelectionMode by viewModel.inSelectionMode.collectAsState()
     LaunchedEffect(viewModel.selectedItems) {

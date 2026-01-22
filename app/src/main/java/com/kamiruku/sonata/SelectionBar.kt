@@ -120,7 +120,7 @@ fun SelectionBar(
             )
 
             Text(
-                text = selectedItems.size.toString(),
+                text = "${selectedItems.size}/${flat.size}",
                 textAlign = TextAlign.Center,
                 modifier = Modifier.align(Alignment.Center)
             )
