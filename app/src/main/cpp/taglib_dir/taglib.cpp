@@ -2,11 +2,8 @@
 #include "taglib/taglib/fileref.h"
 #include "taglib/taglib/tag.h"
 #include <memory>
-#include <android/log.h>
 #include "toolkit/tfilestream.h"
-#include "toolkit/tstringlist.h"
 #include "tpropertymap.h"
-#include "wav/wavproperties.h"
 #include "flacproperties.h"
 #include "mpegfile.h"
 #include "flacfile.h"
@@ -23,6 +20,10 @@ jmethodID g_hashMapPut = nullptr;
 jclass g_tagLibObjectClass = nullptr;
 jmethodID g_tagLibObjectCtor = nullptr;
 
+jobjectArray strListToJniArray(JNIEnv *env, const TagLib::StringList &stringList);
+jobject propertyMapToHashMap(JNIEnv *env, const TagLib::PropertyMap &propertyMap);
+TagLib::File* createByExtension(const TagLib::String &fileName, TagLib::IOStream *stream, bool readProps = true, TagLib::AudioProperties::ReadStyle style = TagLib::AudioProperties::Average);
+
 extern "C"
 JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *) {
     JNIEnv *env;
@@ -31,7 +32,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *) {
 
     auto cacheClass = [env](const char *name) {
         jclass tmp = env->FindClass(name);
-        jclass global = (jclass)env->NewGlobalRef(tmp);
+        auto global = (jclass)env->NewGlobalRef(tmp);
         env->DeleteLocalRef(tmp);
         return global;
     };
@@ -49,61 +50,6 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *) {
             "(IIIIILjava/util/HashMap;)V");
 
     return JNI_VERSION_1_6;
-}
-
-jobjectArray strListToJniArray(JNIEnv *env, const TagLib::StringList &stringList) {
-    jobjectArray array = env->NewObjectArray(stringList.size(),g_stringClass, nullptr);
-
-    for (size_t i { 0 }; i < stringList.size(); ++i) {
-        jstring str = env->NewStringUTF(stringList[i].toCString(true));
-        env->SetObjectArrayElement(array, i, str);
-        env->DeleteLocalRef(str);
-    }
-    return array;
-}
-
-jobject propertyMapToHashMap(JNIEnv *env, const TagLib::PropertyMap &propertyMap) {
-    jobject map = env->NewObject(g_hashMapClass, g_hashMapInit, static_cast<jint>(propertyMap.size()));
-
-    for (const auto& [key, values]: propertyMap) {
-        jobjectArray valueArray = strListToJniArray(env, values);
-        jstring keyStr = env->NewStringUTF(key.toCString(true));
-
-        env->CallObjectMethod(map, g_hashMapPut, keyStr, valueArray);
-
-        env->DeleteLocalRef(keyStr);
-        env->DeleteLocalRef(valueArray);
-    }
-
-    return map;
-}
-
-TagLib::File* createByExtension(const TagLib::String &fileName,
-                                TagLib::IOStream *stream,
-                                bool readProps = true,
-                                TagLib::AudioProperties::ReadStyle style = TagLib::AudioProperties::Average)
-{
-    int dot = fileName.rfind(".");
-    if(dot < 0) return nullptr;
-
-    auto ext = fileName.substr(dot + 1).upper();
-
-    if(ext == "MP3")
-        return new TagLib::MPEG::File(stream, readProps, style);
-
-    if(ext == "FLAC")
-        return new TagLib::FLAC::File(stream, readProps, style);
-
-    if(ext == "WAV")
-        return new TagLib::RIFF::WAV::File(stream, readProps, style);
-
-    if(ext == "DSF")
-        return new TagLib::DSF::File(stream, readProps, style);
-
-    if(ext == "DFF" || ext == "DSDIFF")
-        return new TagLib::DSDIFF::File(stream, readProps, style);
-
-    return nullptr;
 }
 
 extern "C"
@@ -226,4 +172,60 @@ Java_com_kamiruku_sonata_taglib_TagLib_getAudioProperties(JNIEnv* env,jobject th
     jintArray result = env->NewIntArray(5);
     env->SetIntArrayRegion(result, 0, 5, values);
     return result;
+}
+
+jobjectArray strListToJniArray(JNIEnv *env, const TagLib::StringList &stringList) {
+    jobjectArray array = env->NewObjectArray(static_cast<jint>(stringList.size()), g_stringClass, nullptr);
+
+    for (size_t i { 0 }; i < stringList.size(); i++) {
+        jstring str = env->NewStringUTF(stringList[i].toCString(true));
+        env->SetObjectArrayElement(array, static_cast<jint>(i), str);
+        env->DeleteLocalRef(str);
+    }
+
+    return array;
+}
+
+jobject propertyMapToHashMap(JNIEnv *env, const TagLib::PropertyMap &propertyMap) {
+    jobject map = env->NewObject(g_hashMapClass, g_hashMapInit, static_cast<jint>(propertyMap.size()));
+
+    for (const auto& [key, values]: propertyMap) {
+        jobjectArray valueArray = strListToJniArray(env, values);
+        jstring keyStr = env->NewStringUTF(key.toCString(true));
+
+        env->CallObjectMethod(map, g_hashMapPut, keyStr, valueArray);
+
+        env->DeleteLocalRef(keyStr);
+        env->DeleteLocalRef(valueArray);
+    }
+
+    return map;
+}
+
+TagLib::File* createByExtension(const TagLib::String &fileName,
+                                TagLib::IOStream *stream,
+                                bool readProps,
+                                TagLib::AudioProperties::ReadStyle style)
+{
+    int dot = fileName.rfind(".");
+    if (dot < 0) return nullptr;
+
+    auto ext = fileName.substr(dot + 1).upper();
+
+    if (ext == "MP3")
+        return new TagLib::MPEG::File(stream, readProps, style);
+
+    if (ext == "FLAC")
+        return new TagLib::FLAC::File(stream, readProps, style);
+
+    if (ext == "WAV")
+        return new TagLib::RIFF::WAV::File(stream, readProps, style);
+
+    if (ext == "DSF")
+        return new TagLib::DSF::File(stream, readProps, style);
+
+    if (ext == "DFF" || ext == "DSDIFF")
+        return new TagLib::DSDIFF::File(stream, readProps, style);
+
+    return nullptr;
 }
