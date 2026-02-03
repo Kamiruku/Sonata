@@ -218,7 +218,7 @@ fun SonataNavHost(
         }
 
         entry<SonataRoute.SettingsLibrary> {
-
+            com.kamiruku.sonata.features.settings.LibraryScreen()
         }
 
         entry<SonataRoute.SettingsAudio> {
