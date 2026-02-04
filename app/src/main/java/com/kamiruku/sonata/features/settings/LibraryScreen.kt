@@ -1,10 +1,6 @@
 package com.kamiruku.sonata.features.settings
 
-import android.net.Uri
-import android.os.Environment
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,9 +14,12 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateSetOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -31,26 +30,29 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun LibraryScreen() {
     val context = LocalContext.current
-    val paths = mutableStateSetOf<String>()
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
-    ) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        val path = uri.getRealPath()
+    val paths = remember { mutableStateSetOf<String>() }
+    val showDialog = remember { mutableStateOf(false) }
 
-        val parentFolder = paths.filter { path.startsWith(it) }
-        if (parentFolder.isNotEmpty()) {
-            Toast.makeText(context, "Folder/parent folder already included.", Toast.LENGTH_SHORT).show()
-            return@rememberLauncherForActivityResult
-        }
+    if (showDialog.value) {
+        FolderPickerDialog(
+            context = context,
+            callback = { path ->
+                val parentFolder = paths.filter { path.startsWith(it) }
+                if (parentFolder.isNotEmpty()) {
+                    Toast.makeText(context, "Folder/parent folder already included.", Toast.LENGTH_SHORT).show()
+                    return@FolderPickerDialog
+                }
 
-        val childrenFolder = paths.filter { it.startsWith(path) }
-        if (childrenFolder.isNotEmpty()) {
-            Toast.makeText(context, "${childrenFolder.size} ${if (childrenFolder.size > 1) "entries" else "entry"} are children of the new folder and will be removed.", Toast.LENGTH_SHORT).show()
-            paths.removeAll(childrenFolder)
-        }
-
-        paths.add(path)
+                val childrenFolder = paths.filter { it.startsWith(path) }
+                if (childrenFolder.isNotEmpty()) {
+                    Toast.makeText(context, "${childrenFolder.size} ${if (childrenFolder.size > 1) "entries" else "entry"} are children of the new folder and will be removed.", Toast.LENGTH_SHORT).show()
+                    paths.removeAll(childrenFolder)
+                }
+                paths.add(path)
+                showDialog.value = false
+            },
+            onDismiss = { showDialog.value = false }
+        )
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -73,11 +75,12 @@ fun LibraryScreen() {
                     modifier = Modifier
                         .weight(1f)
                         .align(Alignment.CenterVertically),
-                    fontSize = 18.sp
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.secondary
                 )
 
                 IconButton(
-                    onClick = { launcher.launch(null) },
+                    onClick = { showDialog.value = true },
                     Modifier.align(Alignment.CenterVertically)
                 ) {
                     Icon(Icons.Outlined.Add, contentDescription = "add")
@@ -90,26 +93,6 @@ fun LibraryScreen() {
                 }
             }
         }
-    }
-}
-private fun Uri.getAbsolutePath(): String {
-    val uriPath = this.getPath()
-    var filePath = Environment.getExternalStorageDirectory().absolutePath
-    if (uriPath != null) {
-        val x = uriPath.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-        if (x.size > 1) filePath = filePath + "/" + x[1]
-    }
-    return filePath
-}
-
-private fun Uri.getRealPath(): String {
-    val path = this.path ?: ""
-    val pathSplit = path.replace("/tree", "").removePrefix("/").split('/')
-    if (pathSplit[0].take(7) == "primary") {
-        return this.getAbsolutePath()
-    } else {
-        val new = "/storage" + path.replace("/tree", "").replace(":", "/")
-        return new
     }
 }
 
