@@ -17,6 +17,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.remember
@@ -26,12 +29,25 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.kamiruku.sonata.datastore.DataStoreViewModel
 
 @Composable
-fun LibraryScreen() {
+fun LibraryScreen(viewModel: DataStoreViewModel = viewModel()) {
+    val pathSrcs by viewModel.pathSrcs.collectAsState()
+
     val context = LocalContext.current
     val paths = remember { mutableStateSetOf<String>() }
     val showDialog = remember { mutableStateOf(false) }
+
+    //Should perform overlapping check here...?
+    LaunchedEffect(pathSrcs) {
+        pathSrcs?.let {
+            paths.addAll(it)
+        }
+    }
 
     if (showDialog.value) {
         FolderPickerDialog(
@@ -93,6 +109,10 @@ fun LibraryScreen() {
                 }
             }
         }
+    }
+
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) {
+        viewModel.savePathSrcs(paths)
     }
 }
 
