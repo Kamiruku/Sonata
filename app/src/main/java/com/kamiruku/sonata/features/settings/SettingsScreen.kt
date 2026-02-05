@@ -17,16 +17,11 @@ import com.kamiruku.sonata.Song
 
 @Composable
 fun SettingsScreen(
-    hasLibrary: Boolean,
     onGeneralClick: () -> Unit,
     onLibraryClick: () -> Unit,
     onAudioClick: () -> Unit,
     onAboutClick: () -> Unit
 ) {
-    LaunchedEffect(hasLibrary) {
-        if (!hasLibrary) onGeneralClick()
-    }
-
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(25.dp)

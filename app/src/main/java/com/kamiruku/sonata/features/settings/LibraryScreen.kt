@@ -31,11 +31,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.kamiruku.sonata.datastore.DataStoreViewModel
+import com.kamiruku.sonata.SharedViewModel
 
 @Composable
-fun LibraryScreen(viewModel: DataStoreViewModel = viewModel()) {
+fun LibraryScreen(viewModel: SharedViewModel) {
     val pathSrcs by viewModel.pathSrcs.collectAsState()
 
     val context = LocalContext.current
@@ -44,9 +43,7 @@ fun LibraryScreen(viewModel: DataStoreViewModel = viewModel()) {
 
     //Should perform overlapping check here...?
     LaunchedEffect(pathSrcs) {
-        pathSrcs?.let {
-            paths.addAll(it)
-        }
+        paths.addAll(pathSrcs)
     }
 
     if (showDialog.value) {

@@ -205,7 +205,6 @@ fun SonataNavHost(
 
         entry<SonataRoute.SettingsHome> {
             SettingsScreen(
-                songList.isNotEmpty(),
                 onGeneralClick = { navigator.navigate(SonataRoute.SettingsGeneral) },
                 onLibraryClick = { navigator.navigate(SonataRoute.SettingsLibrary) },
                 onAudioClick = { navigator.navigate(SonataRoute.SettingsAudio) },
@@ -218,7 +217,7 @@ fun SonataNavHost(
         }
 
         entry<SonataRoute.SettingsLibrary> {
-            com.kamiruku.sonata.features.settings.LibraryScreen()
+            com.kamiruku.sonata.features.settings.LibraryScreen(viewModel)
         }
 
         entry<SonataRoute.SettingsAudio> {

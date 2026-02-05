@@ -19,15 +19,17 @@ fun SonataApp(viewModel: SharedViewModel) {
 
     val uiState by viewModel.uiState.collectAsState()
 
+    /*
     val initialRoute = remember(uiState) {
         when (uiState) {
             LibraryUIState.Empty -> SonataRoute.SettingsHome
             else -> SonataRoute.LibraryHome
         }
     }
+     */
 
     val navigationState = rememberNavigationState(
-        startRoute = initialRoute,
+        startRoute = SonataRoute.LibraryHome,
         topLevelRoutes = setOf(
             SonataRoute.LibraryHome,
             SonataRoute.Search,

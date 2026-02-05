@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.kamiruku.sonata.datastore.DataStoreInstance
 import com.kamiruku.sonata.db.SongEntity
 import com.kamiruku.sonata.db.SongRepository
 import kotlinx.coroutines.Dispatchers
@@ -139,7 +140,32 @@ class SharedViewModel(
         _inSelectionMode.value = mode
     }
 
+    private val _pathSrcs = MutableStateFlow<Set<String>>(emptySet())
+    val pathSrcs: StateFlow<Set<String>> = _pathSrcs
+
+    private fun getPathSrcs() {
+        viewModelScope.launch {
+            DataStoreInstance.getPathSrcs(
+                getApplication(),
+                DataStoreInstance.PathSrcs_KEY
+            ).collect { value ->
+                _pathSrcs.value = value ?: emptySet()
+            }
+        }
+    }
+
+    fun savePathSrcs(value: Set<String>) {
+        viewModelScope.launch {
+            DataStoreInstance.savePathSrcs(
+                getApplication(),
+                DataStoreInstance.PathSrcs_KEY,
+                value
+            )
+        }
+    }
+
     init {
+        getPathSrcs()
         viewModelScope.launch {
             query
                 .debounce(400)
@@ -171,7 +197,8 @@ class SharedViewModel(
             duration = this.duration,
             dateModified = this.dateModified,
             size = this.size,
-            path = this.path
+            path = this.path,
+            volumeName = this.volumeName
         )
     }
 }
