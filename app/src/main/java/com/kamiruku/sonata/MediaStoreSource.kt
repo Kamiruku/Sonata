@@ -10,8 +10,8 @@ import com.kamiruku.sonata.taglib.TagLib
 import com.kamiruku.sonata.taglib.TagLibObject
 
 class MediaStoreSource(private val contentResolver: ContentResolver) {
-    suspend fun syncLibrary(repository: SongRepository): Boolean {
-        val mediaStoreFiles = getMediaStoreFiles()
+    suspend fun syncLibrary(repository: SongRepository, pathSrcs: Set<String>): Boolean {
+        val mediaStoreFiles = getMediaStoreFiles(pathSrcs)
 
         Log.d("SongSync", "Found ${mediaStoreFiles.size} songs in MediaStore")
         Log.d("SongSync", "DB has ${repository.getSongCount()} songs")
@@ -50,7 +50,7 @@ class MediaStoreSource(private val contentResolver: ContentResolver) {
         return newSongs.isNotEmpty() || deletedPaths.isNotEmpty()
     }
 
-    fun getMediaStoreFiles(): List<MediaStoreFile> {
+    fun getMediaStoreFiles(pathSrcs: Set<String>): List<MediaStoreFile> {
         //.nomedia affected
         val musicUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
         val projection = arrayOf(
@@ -64,37 +64,39 @@ class MediaStoreSource(private val contentResolver: ContentResolver) {
 
         val fileList = mutableListOf<MediaStoreFile>()
 
-        val audioCursor = contentResolver.query(
-            musicUri,
-            projection,
-            "${MediaStore.Audio.Media.RELATIVE_PATH} LIKE ?",
-            arrayOf("%Music%"),
-            null
-        ) ?: return emptyList()
+        for (path in pathSrcs) {
+            val audioCursor = contentResolver.query(
+                musicUri,
+                projection,
+                "${MediaStore.Audio.Media.DATA} LIKE ?",
+                arrayOf("%$path%"),
+                null
+            ) ?: return emptyList()
 
-        audioCursor.use { cursor ->
-            val idColumn = cursor.getColumnIndex(MediaStore.Audio.AudioColumns._ID)
-            val albumIdColumn = cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID)
-            val relativePathColumn = cursor.getColumnIndex(MediaStore.Audio.AudioColumns.RELATIVE_PATH)
-            val displayNameColumn = cursor.getColumnIndex(MediaStore.Audio.AudioColumns.DISPLAY_NAME)
-            val dateModifiedColumn = cursor.getColumnIndex(MediaStore.Audio.Media.DATE_MODIFIED)
-            val sizeColumn = cursor.getColumnIndex(MediaStore.Audio.Media.SIZE)
+            audioCursor.use { cursor ->
+                val idColumn = cursor.getColumnIndex(MediaStore.Audio.AudioColumns._ID)
+                val albumIdColumn = cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID)
+                val relativePathColumn = cursor.getColumnIndex(MediaStore.Audio.AudioColumns.RELATIVE_PATH)
+                val displayNameColumn = cursor.getColumnIndex(MediaStore.Audio.AudioColumns.DISPLAY_NAME)
+                val dateModifiedColumn = cursor.getColumnIndex(MediaStore.Audio.Media.DATE_MODIFIED)
+                val sizeColumn = cursor.getColumnIndex(MediaStore.Audio.Media.SIZE)
 
-            cursor.apply {
-                if (count == 0) Log.d("Cursor", "get cursor data: Cursor is empty.")
-                else {
-                    while (cursor.moveToNext()) {
-                        try {
-                            val iD = cursor.getLong(idColumn)
-                            val albumId = cursor.getLong(albumIdColumn)
-                            val relativePath = cursor.getString(relativePathColumn)
-                            val displayName = cursor.getString(displayNameColumn)
-                            val dateModified = cursor.getLong(dateModifiedColumn) * 1000L
-                            val size = cursor.getLong(sizeColumn)
+                cursor.apply {
+                    if (count == 0) Log.d("Cursor", "get cursor data: Cursor is empty.")
+                    else {
+                        while (cursor.moveToNext()) {
+                            try {
+                                val iD = cursor.getLong(idColumn)
+                                val albumId = cursor.getLong(albumIdColumn)
+                                val relativePath = cursor.getString(relativePathColumn)
+                                val displayName = cursor.getString(displayNameColumn)
+                                val dateModified = cursor.getLong(dateModifiedColumn) * 1000L
+                                val size = cursor.getLong(sizeColumn)
 
-                            fileList += MediaStoreFile(iD, albumId, relativePath, displayName, dateModified, size)
-                        } catch (e: Exception) {
-                            Log.e("Cursor read", "ERR", e)
+                                fileList += MediaStoreFile(iD, albumId, relativePath, displayName, dateModified, size)
+                            } catch (e: Exception) {
+                                Log.e("Cursor read", "ERR", e)
+                            }
                         }
                     }
                 }

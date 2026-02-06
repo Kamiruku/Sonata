@@ -43,7 +43,9 @@ fun LibraryScreen(viewModel: SharedViewModel) {
 
     //Should perform overlapping check here...?
     LaunchedEffect(pathSrcs) {
-        paths.addAll(pathSrcs)
+        pathSrcs?.let {
+            if (it.isNotEmpty()) paths.addAll(it)
+        }
     }
 
     if (showDialog.value) {
@@ -109,7 +111,10 @@ fun LibraryScreen(viewModel: SharedViewModel) {
     }
 
     LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) {
-        viewModel.savePathSrcs(paths)
+        if (paths != pathSrcs) {
+            viewModel.savePathSrcs(paths)
+            //viewModel.syncMusic()
+        }
     }
 }
 

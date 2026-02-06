@@ -23,7 +23,7 @@ object DataStoreInstance {
 
     fun getPathSrcs(context: Context, key: Preferences.Key<Set<String>>): Flow<Set<String>?> {
         return context.dataStore.data.map { preferences ->
-            preferences[key]
+            preferences[key] ?: emptySet()
         }
     }
 }

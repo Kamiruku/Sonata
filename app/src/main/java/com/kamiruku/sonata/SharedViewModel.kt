@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -99,9 +101,10 @@ class SharedViewModel(
 
     fun syncMusic() {
         viewModelScope.launch(Dispatchers.IO) {
+            val path = pathSrcs.filterNotNull().first()
             val mediaStoreSource = MediaStoreSource(getApplication<Application>().contentResolver)
 
-            mediaStoreSource.syncLibrary(songRepository)
+            mediaStoreSource.syncLibrary(songRepository, path)
             val songList = songRepository.getAllSongs().map {
                 it.toUiModel()
             }
@@ -140,8 +143,8 @@ class SharedViewModel(
         _inSelectionMode.value = mode
     }
 
-    private val _pathSrcs = MutableStateFlow<Set<String>>(emptySet())
-    val pathSrcs: StateFlow<Set<String>> = _pathSrcs
+    private val _pathSrcs = MutableStateFlow<Set<String>?>(null)
+    val pathSrcs: StateFlow<Set<String>?> = _pathSrcs
 
     private fun getPathSrcs() {
         viewModelScope.launch {
@@ -149,7 +152,7 @@ class SharedViewModel(
                 getApplication(),
                 DataStoreInstance.PathSrcs_KEY
             ).collect { value ->
-                _pathSrcs.value = value ?: emptySet()
+                _pathSrcs.value = value
             }
         }
     }
@@ -197,8 +200,7 @@ class SharedViewModel(
             duration = this.duration,
             dateModified = this.dateModified,
             size = this.size,
-            path = this.path,
-            volumeName = this.volumeName
+            path = this.path
         )
     }
 }
