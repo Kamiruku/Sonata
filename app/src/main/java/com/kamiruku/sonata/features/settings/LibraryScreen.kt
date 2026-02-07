@@ -50,7 +50,7 @@ fun LibraryScreen(viewModel: SharedViewModel) {
 
     if (showDialog.value) {
         FolderPickerDialog(
-            context = context,
+            rootPaths = viewModel.rootPaths,
             callback = { path ->
                 val parentFolder = paths.filter { path.startsWith(it) }
                 if (parentFolder.isNotEmpty()) {

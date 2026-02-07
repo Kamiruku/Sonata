@@ -75,17 +75,17 @@ fun FolderScreen(
             contentPadding = PaddingValues(vertical = 50.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            item(key = node.path) {
+            item(key = node.absolutePath) {
                 FolderHeader(node)
             }
 
             items(
                 node.children.values.toList(),
-                key = { it.path }
+                key = { it.absolutePath }
             ) { child ->
-                val flat = remember(child.path, allPaths) {
+                val flat = remember(child.absolutePath, allPaths) {
                     if (child.isFolder) {
-                        val startIndex = allPaths.findFirstIndex(child.path)
+                        val startIndex = allPaths.findFirstIndex(child.absolutePath)
                         allPaths.subList(startIndex, startIndex + child.musicTotal)
                     } else {
                         emptyList()

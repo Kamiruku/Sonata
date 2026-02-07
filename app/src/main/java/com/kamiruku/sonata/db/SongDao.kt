@@ -7,7 +7,7 @@ import androidx.room.Upsert
 
 @Dao
 interface SongDao {
-    @Query("SELECT * FROM songs")
+    @Query("SELECT * FROM songs ORDER BY path ASC")
     suspend fun getAllSongs(): List<SongEntity>
 
     @Query("SELECT * FROM songs WHERE path = :path LIMIT 1")
@@ -25,7 +25,7 @@ interface SongDao {
     @Query("SELECT COUNT(*) FROM songs")
     suspend fun getSongCount(): Int
 
-    @Query("SELECT path, date_modified AS dateModified FROM songs")
+    @Query("SELECT path, date_modified AS dateModified FROM songs ORDER BY path ASC")
     suspend fun getPathAndDateModified(): List<PathDate>
 
     @Query("DELETE FROM songs WHERE path IN (:paths)")

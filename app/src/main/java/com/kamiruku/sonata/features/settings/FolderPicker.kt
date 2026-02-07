@@ -1,6 +1,5 @@
 package com.kamiruku.sonata.features.settings
 
-import android.content.Context
 import android.os.Environment
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
@@ -42,7 +41,7 @@ import java.io.File
 
 @Composable
 fun FolderPickerDialog(
-    context: Context,
+    rootPaths: List<File>,
     callback: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -62,22 +61,6 @@ fun FolderPickerDialog(
         parentPath.value = withContext(Dispatchers.IO) {
             currentPath.value.parentFile
         }
-    }
-
-    val rootPaths = remember {
-        val dirs = context.getExternalFilesDirs(null)
-
-        val storages = mutableSetOf<File>()
-        storages.add(Environment.getExternalStorageDirectory())
-
-        dirs.filterNotNull().forEach { dir ->
-            val root = dir.absolutePath.split("/Android/")[0]
-            val file = File(root)
-            if (file.exists()) {
-                storages.add(file)
-            }
-        }
-        storages.toList()
     }
 
     Dialog(

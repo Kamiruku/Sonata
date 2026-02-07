@@ -10,7 +10,7 @@ import com.kamiruku.sonata.taglib.TagLib
 import com.kamiruku.sonata.taglib.TagLibObject
 
 class MediaStoreSource(private val contentResolver: ContentResolver) {
-    suspend fun syncLibrary(repository: SongRepository, pathSrcs: Set<String>): Boolean {
+    suspend fun syncLibrary(repository: SongRepository, pathSrcs: List<String>): Boolean {
         val mediaStoreFiles = getMediaStoreFiles(pathSrcs)
 
         Log.d("SongSync", "Found ${mediaStoreFiles.size} songs in MediaStore")
@@ -50,7 +50,7 @@ class MediaStoreSource(private val contentResolver: ContentResolver) {
         return newSongs.isNotEmpty() || deletedPaths.isNotEmpty()
     }
 
-    fun getMediaStoreFiles(pathSrcs: Set<String>): List<MediaStoreFile> {
+    fun getMediaStoreFiles(pathSrcs: List<String>): List<MediaStoreFile> {
         //.nomedia affected
         val musicUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
         val projection = arrayOf(
@@ -64,6 +64,7 @@ class MediaStoreSource(private val contentResolver: ContentResolver) {
 
         val fileList = mutableListOf<MediaStoreFile>()
 
+        //TODO MediaStore...DATA will be changed later
         for (path in pathSrcs) {
             val audioCursor = contentResolver.query(
                 musicUri,
@@ -82,7 +83,7 @@ class MediaStoreSource(private val contentResolver: ContentResolver) {
                 val sizeColumn = cursor.getColumnIndex(MediaStore.Audio.Media.SIZE)
 
                 cursor.apply {
-                    if (count == 0) Log.d("Cursor", "get cursor data: Cursor is empty.")
+                    if (count == 0) Log.d("Cursor", "get cursor data: Cursor is empty for $path.")
                     else {
                         while (cursor.moveToNext()) {
                             try {

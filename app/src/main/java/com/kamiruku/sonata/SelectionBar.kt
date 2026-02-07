@@ -62,7 +62,7 @@ fun SelectionBar(
     val flat = remember(currentRoute) {
         when (val currentRoute = currentStack?.last()) {
             is SonataRoute.Folder -> {
-                val curPath = currentRoute.path
+                val curPath = currentRoute.absolutePath
                 val curNode = viewModel.findNode(curPath) ?: return@remember emptyList()
                 val startIndex = allPaths.findFirstIndex(curPath)
                 allPaths.subList(startIndex, startIndex + curNode.musicTotal)
@@ -204,7 +204,8 @@ fun SelectionBar(
                             for (i in 1 until splitPath.size) {
                                 val subPath = splitPath.take(i)
                                 val path = subPath.joinToString("/")
-                                routes.add(SonataRoute.Folder(path))
+                                val node = viewModel.findNode(path) ?: continue
+                                routes.add(SonataRoute.Folder(node.absolutePath))
                             }
                             navigator.navigateList(routes)
                         },

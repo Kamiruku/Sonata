@@ -38,7 +38,7 @@ fun SonataNavHost(
     val uiState by viewModel.uiState.collectAsState()
     val buttonEnabled = uiState == LibraryUIState.Ready
 
-    val root by viewModel.rootNode.collectAsState()
+    val roots by viewModel.rootNodes.collectAsState()
     val songList by viewModel.songList.collectAsState()
     val allSongsPath = remember(songList) {
         songList.mapNotNull { it.song?.path }
@@ -125,14 +125,14 @@ fun SonataNavHost(
                 viewModel.setSelectionMode(false)
             }
 
-            root?.let {
+            roots?.let {
                 SwipeBackContainer(
                     onBack = { navigator.goBack() }
                 ) {
                     FileRootScreen(
-                        node = it,
+                        nodes = it,
                         onOpen = { node ->
-                            navigator.navigate(SonataRoute.Folder(node.path))
+                            navigator.navigate(SonataRoute.Folder(node.absolutePath))
                         }
                     )
                 }
@@ -142,9 +142,9 @@ fun SonataNavHost(
         entry<SonataRoute.Folder>(
             metadata = transitionMetadata
         ) { key ->
-            val node = viewModel.findNode(key.path) ?: return@entry
+            val node = viewModel.findNode(key.absolutePath) ?: return@entry
 
-            LaunchedEffect(key.path) {
+            LaunchedEffect(key.absolutePath) {
                 viewModel.clearSelected()
             }
 
@@ -164,7 +164,7 @@ fun SonataNavHost(
                     },
                     node = node,
                     onOpen = { child ->
-                        navigator.navigate(SonataRoute.Folder(child.path))
+                        navigator.navigate(SonataRoute.Folder(child.absolutePath))
                     },
                     onPlay = { song ->
                         println("Clicked ${song.title}")

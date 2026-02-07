@@ -15,7 +15,9 @@ data class FileNode(
     var musicTotal: Int = 0,
     var durationTotal: Long = 0,
     var albumId: Long = 0L, //or closest
-    var path: String = ""
+    val rootPath: String,
+    val path: String,
+    val absolutePath: String = "$rootPath/$path"
 ) : Parcelable
 
 data class Song (
@@ -101,7 +103,16 @@ object FileTreeBuilder {
             .substringAfterLast('/')
             .ifBlank { "root" }
 
-        val root = FileNode(lastFolderName, isFolder = true, path = lastFolderName)
+        val rootPath = parentFolder
+            .trimEnd('/')
+            .substringBeforeLast('/')
+
+        val root = FileNode(
+            lastFolderName,
+            isFolder = true,
+            rootPath = rootPath,
+            path = lastFolderName
+        )
 
         for (song in audioList) {
             val parts = song.path
@@ -115,14 +126,15 @@ object FileTreeBuilder {
                 val isLast = (index == parts.lastIndex)
 
                 currentNode = currentNode.children.getOrPut(part) {
-                    val newSortId =
+                    val newSortPath =
                         if (currentNode.path.isEmpty()) part
                         else "${currentNode.path}/$part"
                     FileNode(
                         name = part,
                         isFolder = !isLast,
                         song = if (isLast) song else null,
-                        path = newSortId
+                        rootPath = rootPath,
+                        path = newSortPath
                     )
                 }
             }

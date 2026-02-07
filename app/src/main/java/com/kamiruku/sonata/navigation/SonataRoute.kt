@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 sealed interface SonataRoute: NavKey {
     @Serializable data object LibraryHome : NavKey
     @Serializable data object FolderRoot : NavKey
-    @Serializable data class Folder(val path: String) : NavKey
+    @Serializable data class Folder(val absolutePath: String) : NavKey
     @Serializable data object AllSongs : NavKey
 
     @Serializable data object NowPlaying : NavKey
