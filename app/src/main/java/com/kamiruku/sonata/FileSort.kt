@@ -1,24 +1,17 @@
 package com.kamiruku.sonata
 
-import android.os.Parcelable
-import kotlinx.parcelize.Parcelize
-import kotlinx.parcelize.RawValue
-
-
-@Parcelize
 data class FileNode(
     val name: String,
-    var song: @RawValue Song? = null,
+    var song: Song? = null,
     val isFolder: Boolean,
     val children: MutableMap<String, FileNode> = mutableMapOf(),
 
     var musicTotal: Int = 0,
     var durationTotal: Long = 0,
     var albumId: Long = 0L, //or closest
-    val rootPath: String,
-    val path: String,
-    val absolutePath: String = "$rootPath/$path"
-) : Parcelable
+    val absolutePath: String,
+    val path: String
+)
 
 data class Song (
     //mediastore ids
@@ -96,27 +89,26 @@ data class Song (
 }
 
 object FileTreeBuilder {
-    fun buildTree(audioList: List<Song>): FileNode {
-        val parentFolder = findParentFolder(audioList)
-        val lastFolderName = parentFolder
+    fun buildTree(audioList: List<Song>, src: String): FileNode {
+        val isNested = src.trimEnd('/').contains('/')
+        val lastFolderName = src
             .trimEnd('/')
             .substringAfterLast('/')
-            .ifBlank { "root" }
+            .ifBlank { src }
 
-        val rootPath = parentFolder
-            .trimEnd('/')
-            .substringBeforeLast('/')
-
+        val rootPath =
+            if (isNested) src.trimEnd('/').substringBeforeLast('/')
+            else ""
         val root = FileNode(
             lastFolderName,
             isFolder = true,
-            rootPath = rootPath,
+            absolutePath = "$rootPath/$lastFolderName".trimStart('/'),
             path = lastFolderName
         )
 
         for (song in audioList) {
             val parts = song.path
-                .removePrefix("$parentFolder/")
+                .removePrefix(src)
                 .split('/')
                 .filter { it.isNotBlank() }
 
@@ -129,11 +121,17 @@ object FileTreeBuilder {
                     val newSortPath =
                         if (currentNode.path.isEmpty()) part
                         else "${currentNode.path}/$part"
+                    if (isLast) {
+                        val absolutePath = "$rootPath/$newSortPath".trimStart('/')
+                        if (absolutePath != song.path) {
+                            error("Absolute path is $absolutePath but should have been ${song.path}")
+                        }
+                    }
                     FileNode(
                         name = part,
                         isFolder = !isLast,
                         song = if (isLast) song else null,
-                        rootPath = rootPath,
+                        absolutePath = "$rootPath/$newSortPath".trimStart('/'),
                         path = newSortPath
                     )
                 }

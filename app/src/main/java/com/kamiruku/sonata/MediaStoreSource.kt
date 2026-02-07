@@ -10,8 +10,9 @@ import com.kamiruku.sonata.taglib.TagLib
 import com.kamiruku.sonata.taglib.TagLibObject
 
 class MediaStoreSource(private val contentResolver: ContentResolver) {
-    suspend fun syncLibrary(repository: SongRepository, pathSrcs: List<String>): Boolean {
-        val mediaStoreFiles = getMediaStoreFiles(pathSrcs)
+    suspend fun syncLibrary(repository: SongRepository, pathSrcs: List<String>): Set<String> {
+        val savedPaths = pathSrcs.toMutableSet()
+        val mediaStoreFiles = getMediaStoreFiles(pathSrcs, { savedPaths.remove(it) })
 
         Log.d("SongSync", "Found ${mediaStoreFiles.size} songs in MediaStore")
         Log.d("SongSync", "DB has ${repository.getSongCount()} songs")
@@ -47,10 +48,10 @@ class MediaStoreSource(private val contentResolver: ContentResolver) {
             Log.d("SongSync", "${deletedPaths.size} songs has been removed from the db")
         }
 
-        return newSongs.isNotEmpty() || deletedPaths.isNotEmpty()
+        return savedPaths
     }
 
-    fun getMediaStoreFiles(pathSrcs: List<String>): List<MediaStoreFile> {
+    fun getMediaStoreFiles(pathSrcs: List<String>, removePath: (String) -> Unit): List<MediaStoreFile> {
         //.nomedia affected
         val musicUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
         val projection = arrayOf(
@@ -83,7 +84,10 @@ class MediaStoreSource(private val contentResolver: ContentResolver) {
                 val sizeColumn = cursor.getColumnIndex(MediaStore.Audio.Media.SIZE)
 
                 cursor.apply {
-                    if (count == 0) Log.d("Cursor", "get cursor data: Cursor is empty for $path.")
+                    if (count == 0) {
+                        Log.d("Cursor", "get cursor data: Cursor is empty for $path.")
+                        removePath(path)
+                    }
                     else {
                         while (cursor.moveToNext()) {
                             try {

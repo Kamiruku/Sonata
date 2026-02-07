@@ -204,7 +204,10 @@ fun SelectionBar(
                             for (i in 1 until splitPath.size) {
                                 val subPath = splitPath.take(i)
                                 val path = subPath.joinToString("/")
-                                val node = viewModel.findNode(path) ?: continue
+                                val node = viewModel.findNode(path) ?: run {
+                                    android.util.Log.d("Selected folder nav", "no node for: $path")
+                                    continue
+                                }
                                 routes.add(SonataRoute.Folder(node.absolutePath))
                             }
                             navigator.navigateList(routes)

@@ -57,7 +57,7 @@ class SharedViewModel(
         _rootNodes.value = rootNodes
         nodeIndex.clear()
         buildIndex(rootNodes)
-        _songList.value = nodeIndex.values.filter { !it.isFolder }
+        _songList.value = nodeIndex.values.filter { !it.isFolder }.sortedBy { it.absolutePath }
         //_songList.value = rootNodes.flattenSongs().sortedBy { it.path }
 
         _uiState.value =
@@ -116,8 +116,10 @@ class SharedViewModel(
 
     fun loadCachedSongs() {
         viewModelScope.launch(Dispatchers.IO) {
-            val paths = pathSrcs.filterNotNull().first().sorted()
-            if (paths.isEmpty()) return@launch
+            val snapshotPaths = getSnapShotPathSrcs()
+            if (snapshotPaths.isEmpty()) return@launch
+
+            Log.d("snapshot_paths", snapshotPaths.toString())
 
             val songList = songRepository.getAllSongs().map {
                 it.toUiModel()
@@ -127,27 +129,30 @@ class SharedViewModel(
             val indexList = mutableListOf<Int>()
             val pathList = mutableListOf<FileNode>()
 
-            /**
-             * Assumes that contents of songList will be contained by all source paths.
-             * Needs a way to ensure this.
-             */
-
-            for (src in paths) {
+            //Sorting snapshot paths doesn't ensure that relativePaths are sorted
+            val relSnapShotPaths = snapshotPaths.map { src ->
                 //root should never be null
                 val root = rootPaths.find { src.startsWith("${it.path}/") }!!.path
-                val relSrc = src.removePrefix("$root/") + '/'
+                src.removePrefix("$root/") + '/'
+            }.sorted()
+
+            for (relSrc in relSnapShotPaths) {
                 val index = songString.findFirstIndex(relSrc)
                 if (index >= songString.size) continue
+                //should be no empty folders
                 if (songString[index].startsWith(relSrc)) {
                     indexList.add(index)
                 }
+                println("$relSrc has index $index")
             }
+
+            Log.d("IndexList", indexList.toString())
 
             for (i in indexList.indices) {
                 val start = indexList[i]
                 val end = if (i != indexList.lastIndex) indexList[i + 1] else songList.size
                 val list = songList.subList(start, end)
-                val rootNode = FileTreeBuilder.buildTree(list)
+                val rootNode = FileTreeBuilder.buildTree(list, relSnapShotPaths[i])
                 pathList.add(rootNode)
             }
 
@@ -158,12 +163,13 @@ class SharedViewModel(
 
     fun syncMusic() {
         viewModelScope.launch(Dispatchers.IO) {
-            val paths = pathSrcs.filterNotNull().first().sorted()
+            val paths = pathSrcs.filterNotNull().first()
             if (paths.isEmpty()) return@launch
 
             val mediaStoreSource = MediaStoreSource(getApplication<Application>().contentResolver)
 
-            mediaStoreSource.syncLibrary(songRepository, paths)
+            //savedPaths only contains folder which actually have contents
+            val savedPaths = mediaStoreSource.syncLibrary(songRepository, paths.toList())
             val songList = songRepository.getAllSongs().map {
                 it.toUiModel()
             }
@@ -172,29 +178,37 @@ class SharedViewModel(
                 return@launch
             }
 
+            Log.d("SyncMusic savedPaths", savedPaths.toString())
+            saveSnapShotPathSrcs(savedPaths.toSet())
+
             val songString = songList.map { it.path }
 
             val indexList = mutableListOf<Int>()
             val pathList = mutableListOf<FileNode>()
 
-            for (src in paths) {
+            //Sorting snapshot paths doesn't ensure that relativePaths are sorted
+            val relSavedPaths = savedPaths.map { src ->
                 //root should never be null
                 val root = rootPaths.find { src.startsWith("${it.path}/") }!!.path
-                val relSrc = src.removePrefix("$root/") + '/'
+                src.removePrefix("$root/") + '/'
+            }.sorted()
+
+            for (relSrc in relSavedPaths) {
                 val index = songString.findFirstIndex(relSrc)
                 if (index >= songString.size) continue
+                //should be no empty folders
                 if (songString[index].startsWith(relSrc)) {
                     indexList.add(index)
                 }
             }
 
-            Log.i("IndexList", indexList.toString())
+            Log.d("IndexList", indexList.toString())
 
             for (i in indexList.indices) {
                 val start = indexList[i]
                 val end = if (i != indexList.lastIndex) indexList[i + 1] else songList.size
                 val list = songList.subList(start, end)
-                val rootNode = FileTreeBuilder.buildTree(list)
+                val rootNode = FileTreeBuilder.buildTree(list, relSavedPaths[i])
                 pathList.add(rootNode)
             }
 
@@ -247,6 +261,29 @@ class SharedViewModel(
             DataStoreInstance.savePathSrcs(
                 getApplication(),
                 DataStoreInstance.PathSrcs_KEY,
+                value
+            )
+        }
+    }
+
+    /**
+     * getSnapShotPathSrcs is only called once, on app startup.
+     */
+    private suspend fun getSnapShotPathSrcs(): Set<String> =
+        DataStoreInstance.getPathSrcs(
+            getApplication(),
+            DataStoreInstance.SnapShot_PathSrcs_KEY
+        ).first()
+
+    /**
+     * saveSnapShotPathSrcs will only be called by syncMusic whenever changes to the db occur.
+     * It does not contain empty folders.
+     */
+    private fun saveSnapShotPathSrcs(value: Set<String>) {
+        viewModelScope.launch {
+            DataStoreInstance.savePathSrcs(
+                getApplication(),
+                DataStoreInstance.SnapShot_PathSrcs_KEY,
                 value
             )
         }

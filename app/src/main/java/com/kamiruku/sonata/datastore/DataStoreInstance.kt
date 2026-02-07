@@ -14,6 +14,7 @@ object DataStoreInstance {
             by preferencesDataStore(name = "settings")
 
     val PathSrcs_KEY = stringSetPreferencesKey("path_sources")
+    val SnapShot_PathSrcs_KEY = stringSetPreferencesKey("snapshot_path_sources")
 
     suspend fun savePathSrcs(context: Context, key: Preferences.Key<Set<String>>, value: Set<String>) {
         context.dataStore.edit { preferences ->
@@ -21,7 +22,7 @@ object DataStoreInstance {
         }
     }
 
-    fun getPathSrcs(context: Context, key: Preferences.Key<Set<String>>): Flow<Set<String>?> {
+    fun getPathSrcs(context: Context, key: Preferences.Key<Set<String>>): Flow<Set<String>> {
         return context.dataStore.data.map { preferences ->
             preferences[key] ?: emptySet()
         }
