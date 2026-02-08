@@ -3,9 +3,6 @@ package com.kamiruku.sonata
 import android.app.Application
 import android.os.Environment
 import android.util.Log
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.kamiruku.sonata.datastore.DataStoreInstance
@@ -32,11 +29,11 @@ class SharedViewModel(
     application: Application,
     private val songRepository: SongRepository
 ): AndroidViewModel(application) {
-    private val _rootNodes = MutableStateFlow<List<FileNode>?>(null)
-    val rootNodes: StateFlow<List<FileNode>?> = _rootNodes
+    private val _rootNodes = MutableStateFlow<List<FileNode>>(emptyList())
+    val rootNodes: StateFlow<List<FileNode>> = _rootNodes.asStateFlow()
 
     private val _songList = MutableStateFlow<List<FileNode>>(emptyList())
-    val songList: StateFlow<List<FileNode>> = _songList
+    val songList: StateFlow<List<FileNode>> = _songList.asStateFlow()
 
     private val nodeIndex = mutableMapOf<String, FileNode>()
 
@@ -44,9 +41,11 @@ class SharedViewModel(
     val uiState: StateFlow<LibraryUIState> = _uiState.asStateFlow()
 
     val query = MutableStateFlow("")
-    var filteredSongs by mutableStateOf<List<Song>>(emptyList())
+    private val _filteredSongs = MutableStateFlow<List<Song>>(emptyList())
+    val filteredSongs: StateFlow<List<Song>> = _filteredSongs.asStateFlow()
 
-    var selectedItems by mutableStateOf<Set<String>>(emptySet())
+    private val _selectedItems = MutableStateFlow<Set<String>>(emptySet())
+    var selectedItems: StateFlow<Set<String>> = _selectedItems.asStateFlow()
 
     private val _inSelectionMode = MutableStateFlow(false)
     val inSelectionMode: StateFlow<Boolean> = _inSelectionMode.asStateFlow()
@@ -98,21 +97,15 @@ class SharedViewModel(
 
     fun findNode(sortId: String): FileNode? = nodeIndex[sortId]
 
-    val rootPaths: List<File> = run {
-        val dirs = application.getExternalFilesDirs(null)
-
-        val storages = mutableSetOf<File>()
-        storages.add(Environment.getExternalStorageDirectory())
-
-        dirs.filterNotNull().forEach { dir ->
-            val root = dir.absolutePath.split("/Android/")[0]
-            val file = File(root)
-            if (file.exists()) {
-                storages.add(file)
-            }
-        }
-        storages.toList()
-    }
+    val rootPaths: List<File> = buildSet {
+        addAll(
+            application.getExternalFilesDirs(null)
+            .filterNotNull()
+            .map { File(it.absolutePath.substringBefore("/Android/")) }
+            .filter { it.exists() }
+        )
+        add(Environment.getExternalStorageDirectory())
+    }.toList()
 
     fun loadCachedSongs() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -129,7 +122,7 @@ class SharedViewModel(
             val indexList = mutableListOf<Int>()
             val pathList = mutableListOf<FileNode>()
 
-            //Sorting snapshot paths doesn't ensure that relativePaths are sorted
+            //Sorting snapshot paths doesn't ensure that relativePaths are sorted - so we sort it here
             val relSnapShotPaths = snapshotPaths.map { src ->
                 //root should never be null
                 val root = rootPaths.find { src.startsWith("${it.path}/") }!!.path
@@ -143,7 +136,6 @@ class SharedViewModel(
                 if (songString[index].startsWith(relSrc)) {
                     indexList.add(index)
                 }
-                println("$relSrc has index $index")
             }
 
             Log.d("IndexList", indexList.toString())
@@ -164,7 +156,11 @@ class SharedViewModel(
     fun syncMusic() {
         viewModelScope.launch(Dispatchers.IO) {
             val paths = pathSrcs.filterNotNull().first()
-            if (paths.isEmpty()) return@launch
+            //if (paths.isEmpty()) return@launch
+            /**
+             * if path is empty, then clear everything anyways
+             * - only in syncMusic
+             */
 
             val mediaStoreSource = MediaStoreSource(getApplication<Application>().contentResolver)
 
@@ -186,7 +182,7 @@ class SharedViewModel(
             val indexList = mutableListOf<Int>()
             val pathList = mutableListOf<FileNode>()
 
-            //Sorting snapshot paths doesn't ensure that relativePaths are sorted
+            //Sorting pathSrc doesn't ensure that relativePaths are sorted - so we sort it here
             val relSavedPaths = savedPaths.map { src ->
                 //root should never be null
                 val root = rootPaths.find { src.startsWith("${it.path}/") }!!.path
@@ -217,24 +213,24 @@ class SharedViewModel(
     }
 
     fun toggleSelect(path: String) {
-        selectedItems =
-            if (path in selectedItems) selectedItems - path
-            else selectedItems + path
+        _selectedItems.value =
+            if (path in _selectedItems.value) _selectedItems.value - path
+            else _selectedItems.value + path
     }
 
     fun toggleSelect(paths: List<String>) {
-        selectedItems =
-            if (selectedItems.containsAll(paths)) selectedItems - paths
-            else selectedItems + paths
+        _selectedItems.value =
+            if (_selectedItems.value.containsAll(paths)) _selectedItems.value - paths
+            else _selectedItems.value + paths
     }
 
     fun setSelected(paths: List<String>) {
-        selectedItems = paths.toSet()
+        _selectedItems.value = paths.toSet()
     }
 
     fun clearSelected(mode: Boolean = false) {
         //if mode = true, keep select screen open even after clearing
-        selectedItems = emptySet()
+        _selectedItems.value = emptySet()
         setSelectionMode(mode)
     }
 
@@ -300,7 +296,7 @@ class SharedViewModel(
                         songRepository.getSongByTitle(q).map { it.toUiModel() }
                     }
                 }
-                .collectLatest { filteredSongs = it }
+                .collectLatest { _filteredSongs.value = it }
         }
     }
 

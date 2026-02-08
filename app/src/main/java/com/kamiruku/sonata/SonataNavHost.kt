@@ -45,8 +45,10 @@ fun SonataNavHost(
     }
 
     val inSelectionMode by viewModel.inSelectionMode.collectAsState()
-    LaunchedEffect(viewModel.selectedItems) {
-        if (viewModel.selectedItems.isNotEmpty()) viewModel.setSelectionMode(true)
+    val selectedItems by viewModel.selectedItems.collectAsState()
+
+    LaunchedEffect(selectedItems) {
+        if (selectedItems.isNotEmpty()) viewModel.setSelectionMode(true)
     }
 
     val transitionMetadata = NavDisplay.transitionSpec {
@@ -102,7 +104,7 @@ fun SonataNavHost(
                 onBack = { navigator.goBack() }
             ) {
                 AllSongsScreen(
-                    selectedItems = viewModel.selectedItems,
+                    selectedItems = selectedItems,
                     inSelectionMode = inSelectionMode,
                     onToggleSelect = { path ->
                         viewModel.toggleSelect(path)
@@ -125,24 +127,25 @@ fun SonataNavHost(
                 viewModel.setSelectionMode(false)
             }
 
-            roots?.let {
-                SwipeBackContainer(
-                    onBack = { navigator.goBack() }
-                ) {
-                    FileRootScreen(
-                        nodes = it,
-                        onOpen = { node ->
-                            navigator.navigate(SonataRoute.Folder(node.absolutePath))
-                        }
-                    )
-                }
+            SwipeBackContainer(
+                onBack = { navigator.goBack() }
+            ) {
+                FileRootScreen(
+                    nodes = roots,
+                    onOpen = { node ->
+                        navigator.navigate(SonataRoute.Folder(node.absolutePath))
+                    }
+                )
             }
         }
 
         entry<SonataRoute.Folder>(
             metadata = transitionMetadata
         ) { key ->
-            val node = viewModel.findNode(key.absolutePath) ?: return@entry
+            val node = viewModel.findNode(key.absolutePath) ?: run {
+                android.util.Log.d("Folder find node", "failed for ${key.absolutePath}")
+                return@entry
+            }
 
             LaunchedEffect(key.absolutePath) {
                 viewModel.clearSelected()
@@ -153,14 +156,13 @@ fun SonataNavHost(
             ) {
                 FolderScreen(
                     allPaths = allSongsPath,
-                    selectedItems = viewModel.selectedItems,
+                    selectedItems = selectedItems,
                     inSelectionMode = inSelectionMode,
                     onToggleSelect = { path ->
                         viewModel.toggleSelect(path)
                     },
                     onToggleSelectFolder = { paths ->
                         viewModel.toggleSelect(paths)
-
                     },
                     node = node,
                     onOpen = { child ->
@@ -176,7 +178,7 @@ fun SonataNavHost(
 
         entry<SonataRoute.Search> {
             val textFieldState = rememberTextFieldState()
-            val filteredSongs = viewModel.filteredSongs
+            val filteredSongs by viewModel.filteredSongs.collectAsState()
 
             LaunchedEffect(Unit) {
                 viewModel.clearSelected()
@@ -191,7 +193,7 @@ fun SonataNavHost(
                 onClick = { song ->
                     println(song.title)
                 },
-                selectedItems = viewModel.selectedItems,
+                selectedItems = selectedItems,
                 inSelectionMode = inSelectionMode,
                 onToggleSelect = { path ->
                     viewModel.toggleSelect(path)

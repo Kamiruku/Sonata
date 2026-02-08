@@ -50,16 +50,18 @@ fun SelectionBar(
     navigator: Navigator
 ) {
     var selectedSong by remember { mutableStateOf<Song?>(null) }
-    val selectedItems = viewModel.selectedItems
+    val selectedItems by viewModel.selectedItems.collectAsState()
 
     val songList by viewModel.songList.collectAsState()
-    val allPaths = songList.mapNotNull { it.song?.path }
+    val allPaths = remember (songList) {
+        songList.mapNotNull { it.song?.path }
+    }
 
-    val filteredSongs = viewModel.filteredSongs
+    val filteredSongs by viewModel.filteredSongs.collectAsState()
 
     val currentStack = state.backStacks[state.topLevelRoute]
     val currentRoute = currentStack?.last()
-    val flat = remember(currentRoute) {
+    val flat = remember(currentRoute, allPaths, filteredSongs) {
         when (val currentRoute = currentStack?.last()) {
             is SonataRoute.Folder -> {
                 val curPath = currentRoute.absolutePath
@@ -151,7 +153,7 @@ fun SelectionBar(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(
-                        enabled = viewModel.selectedItems.isNotEmpty(),
+                        enabled = selectedItems.isNotEmpty(),
                         onClick = { },
                         modifier = Modifier.size(BUTTON_SIZE)
                     ) {
@@ -159,7 +161,7 @@ fun SelectionBar(
                     }
 
                     IconButton(
-                        enabled = viewModel.selectedItems.isNotEmpty(),
+                        enabled = selectedItems.isNotEmpty(),
                         onClick = { },
                         modifier = Modifier.size(BUTTON_SIZE)
                     ) {
@@ -167,7 +169,7 @@ fun SelectionBar(
                     }
 
                     IconButton(
-                        enabled = viewModel.selectedItems.isNotEmpty(),
+                        enabled = selectedItems.isNotEmpty(),
                         onClick = { },
                         modifier = Modifier.size(BUTTON_SIZE)
                     ) {
@@ -184,9 +186,9 @@ fun SelectionBar(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(
-                        enabled = viewModel.selectedItems.size == 1,
+                        enabled = selectedItems.size == 1,
                         onClick = {
-                            selectedSong = viewModel.findNode(viewModel.selectedItems.single())?.song
+                            selectedSong = viewModel.findNode(selectedItems.single())?.song
                         },
                         modifier = Modifier.size(BUTTON_SIZE)
                     ) {
@@ -194,9 +196,9 @@ fun SelectionBar(
                     }
 
                     IconButton(
-                        enabled = viewModel.selectedItems.size == 1,
+                        enabled = selectedItems.size == 1,
                         onClick = {
-                            val curPath = viewModel.selectedItems.single()
+                            val curPath = selectedItems.single()
                             val splitPath = curPath.split('/').filter { it.isNotEmpty() }
                             val routes = mutableListOf<NavKey>()
                             routes.add(SonataRoute.LibraryHome)
@@ -218,7 +220,7 @@ fun SelectionBar(
                     }
 
                     IconButton(
-                        enabled = viewModel.selectedItems.size == 1,
+                        enabled = selectedItems.size == 1,
                         onClick = { },
                         modifier = Modifier.size(BUTTON_SIZE)
                     ) {

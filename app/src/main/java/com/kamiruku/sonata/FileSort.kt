@@ -46,13 +46,16 @@ data class Song (
         other as Song
 
         if (iD != other.iD) return false
+        /*
         if (albumId != other.albumId) return false
         if (bitrate != other.bitrate) return false
         if (sampleRate != other.sampleRate) return false
         if (channels != other.channels) return false
         if (bitsPerSample != other.bitsPerSample) return false
         if (duration != other.duration) return false
+         */
         if (dateModified != other.dateModified) return false
+        /*
         if (size != other.size) return false
         if (!artists.contentEquals(other.artists)) return false
         if (title != other.title) return false
@@ -61,6 +64,7 @@ data class Song (
         if (albumArtist != other.albumArtist) return false
         if (track != other.track) return false
         if (disc != other.disc) return false
+         */
         if (path != other.path) return false
 
         return true
@@ -68,13 +72,16 @@ data class Song (
 
     override fun hashCode(): Int {
         var result = iD.hashCode()
+        /*
         result = 31 * result + albumId.hashCode()
         result = 31 * result + bitrate
         result = 31 * result + sampleRate
         result = 31 * result + channels
         result = 31 * result + bitsPerSample
         result = 31 * result + duration.hashCode()
+         */
         result = 31 * result + dateModified.hashCode()
+        /*
         result = 31 * result + size.hashCode()
         result = 31 * result + artists.contentHashCode()
         result = 31 * result + title.hashCode()
@@ -83,6 +90,7 @@ data class Song (
         result = 31 * result + albumArtist.hashCode()
         result = 31 * result + track.hashCode()
         result = 31 * result + disc.hashCode()
+         */
         result = 31 * result + path.hashCode()
         return result
     }
@@ -121,17 +129,17 @@ object FileTreeBuilder {
                     val newSortPath =
                         if (currentNode.path.isEmpty()) part
                         else "${currentNode.path}/$part"
+                    val absolutePath = "$rootPath/$newSortPath".trimStart('/')
                     if (isLast) {
-                        val absolutePath = "$rootPath/$newSortPath".trimStart('/')
-                        if (absolutePath != song.path) {
-                            error("Absolute path is $absolutePath but should have been ${song.path}")
+                        check(absolutePath == song.path) {
+                            "Absolute path is $absolutePath but should have been ${song.path}"
                         }
                     }
                     FileNode(
                         name = part,
                         isFolder = !isLast,
                         song = if (isLast) song else null,
-                        absolutePath = "$rootPath/$newSortPath".trimStart('/'),
+                        absolutePath = absolutePath,
                         path = newSortPath
                     )
                 }
