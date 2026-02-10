@@ -174,36 +174,5 @@ object FileTreeBuilder {
         node.albumId = albumId ?: 0L
 
         localNodeIndex[node.absolutePath] = node
-
-        /**
-        compareBy it.lowercase() will override like in the case of whatsapp having
-        Whatsapp AND whatsapp
-        */
-        //val sorted = node.children.toSortedMap(compareBy<String> { it.lowercase() }.thenBy { it })
-        //node.children.clear()
-        //node.children.putAll(sorted)
-    }
-
-    private fun findParentFolder(audioList: List<Song>): String {
-        val paths = audioList.map { it.path }
-
-        if (paths.isEmpty()) return ""
-
-        val splitPaths = paths.map { it.split('/') }
-
-        val first = splitPaths[0]
-        val common = mutableListOf<String>()
-
-        for (index in first.indices) {
-            val segment = first[index]
-
-            if (splitPaths.any { it.size <= index || it[index] != segment }) {
-                break
-            }
-
-            common += segment
-        }
-
-        return common.joinToString("/")
     }
 }
