@@ -67,7 +67,7 @@ fun SelectionBar(
                 val curPath = currentRoute.absolutePath
                 val curNode = viewModel.findNode(curPath)
                     ?: error("couldn't find node for: $curPath")
-                val startIndex = allPaths.findFirstIndex(curPath)
+                val startIndex = allPaths.findFirstIndex(curPath) { it }
 
                 check(allPaths[startIndex].startsWith("$curPath/")) {
                     "start index: $startIndex " +

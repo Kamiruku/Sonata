@@ -86,7 +86,7 @@ fun FolderScreen(
                 val flat = remember(child.absolutePath, allPaths) {
                     if (child.isFolder) {
                         val folderPath = child.absolutePath + '/'
-                        val startIndex = allPaths.findFirstIndex(folderPath)
+                        val startIndex = allPaths.findFirstIndex(folderPath) { it }
 
                         check(allPaths[startIndex].startsWith(folderPath)) {
                             "start index: $startIndex " +

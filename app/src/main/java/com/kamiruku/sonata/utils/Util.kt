@@ -23,29 +23,28 @@ fun Long.toTime(): String {
 
     return if (hours == 0L) String.format(Locale.US, "%02d:%02d", mins, secs)
     else String.format(Locale.US, "%02d:%02d:%02d", hours, mins, secs)
+}   
+
+fun <T> List<T>.findFirstIndex(curPath: String, selector: (T) -> String): Int {
+    return binarySearch(this, 0, this.size, curPath, selector)
 }
 
-fun FileNode.flattenNodes(): List<FileNode> {
-    val result = mutableListOf<FileNode>()
+@Suppress("SameParameterValue")
+private inline fun <T> binarySearch(
+    list: List<T>, fromIndex: Int, toIndex: Int, key: String, selector: (T) -> String
+): Int {
+    var low = fromIndex
+    var high = toIndex - 1
 
-    fun dfs(node: FileNode) {
-        if (!node.isFolder) {
-            result += node
-            return
-        }
+    while (low <= high) {
+        val mid = (low + high) ushr 1
+        val midVal = list[mid]
 
-        node.children.values.forEach { child ->
-            dfs(child)
-        }
+        val midKey = selector(midVal)
+
+        if (midKey < key) low = mid + 1
+        else if (midKey > key) high = mid - 1
+        else error("index found for $key which should not have been found")
     }
-
-    dfs(this)
-    return result
-}
-
-fun List<String>.findFirstIndex(curPath: String): Int {
-    var index = this.binarySearch(curPath)
-    //will never find an exact match since we are finding a folder in a list of file paths
-    index = - (index + 1)
-    return index
+    return low
 }

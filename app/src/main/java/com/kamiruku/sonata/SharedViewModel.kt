@@ -137,8 +137,6 @@ class SharedViewModel(
             return
         }
 
-        val songString = songList.map { it.path }
-
         val indexList = mutableListOf<Int>()
         val pathList = mutableListOf<FileNode>()
 
@@ -148,20 +146,20 @@ class SharedViewModel(
         }.sorted()
 
         for (relSrc in relPaths.withIndex()) {
-            val folderIndex = songString.findFirstIndex(relSrc.value)
+            val folderIndex = songList.findFirstIndex(relSrc.value) { it.path }
 
-            check(folderIndex < songString.size) {
-                "folder index: $folderIndex is bigger than amount of songs: ${songString.size}"
+            check(folderIndex < songList.size) {
+                "folder index: $folderIndex is bigger than amount of songs: ${songList.size}"
             }
-            check(songString[folderIndex].startsWith(relSrc.value)) {
-                "${songString[folderIndex]} " +
+            check((songList[folderIndex].path).startsWith(relSrc.value)) {
+                "${songList[folderIndex].path} " +
                         "\ndid not start with ${relSrc.value} " +
                         "\nfor its index: $folderIndex"
             }
             if (relSrc.index != 0) {
-                check(songString[folderIndex - 1].startsWith(relPaths[relSrc.index - 1])) {
+                check((songList[folderIndex - 1].path).startsWith(relPaths[relSrc.index - 1])) {
                     "end boundary: " +
-                            "\n${songString[folderIndex - 1]} " +
+                            "\n${songList[folderIndex - 1].path} " +
                             "\ndid not start with the previous src: ${relPaths[relSrc.index - 1]} " +
                             "\nfor end boundary index: ${folderIndex - 1}"
                 }
