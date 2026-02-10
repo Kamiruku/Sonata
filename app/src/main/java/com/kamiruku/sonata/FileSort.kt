@@ -97,7 +97,7 @@ data class Song (
 }
 
 object FileTreeBuilder {
-    fun buildTree(audioList: List<Song>, src: String): FileNode {
+    fun buildTree(audioList: List<Song>, src: String, localNodeIndex: MutableMap<String, FileNode>): FileNode {
         val isNested = src.trimEnd('/').contains('/')
         val lastFolderName = src
             .trimEnd('/')
@@ -145,15 +145,16 @@ object FileTreeBuilder {
                 }
             }
         }
-        computeTotalAndSort(root)
+        computeTotal(root, localNodeIndex)
         return root
     }
 
-    private fun computeTotalAndSort(node: FileNode) {
+    private fun computeTotal(node: FileNode, localNodeIndex: MutableMap<String, FileNode>) {
         if (!node.isFolder) {
             node.musicTotal = 1
             node.durationTotal = node.song?.duration ?: 0
             node.albumId = node.song?.albumId ?: 0L
+            localNodeIndex[node.absolutePath] = node
             return
         }
 
@@ -162,7 +163,7 @@ object FileTreeBuilder {
         var albumId: Long? = null
 
         node.children.values.forEach { child ->
-            computeTotalAndSort(child)
+            computeTotal(child, localNodeIndex)
             count += child.musicTotal
             duration += child.durationTotal
             if (albumId == null && child.albumId != 0L) albumId = child.albumId
@@ -172,9 +173,15 @@ object FileTreeBuilder {
         node.durationTotal = duration
         node.albumId = albumId ?: 0L
 
-        val sorted = node.children.toSortedMap(compareBy { it.lowercase() })
-        node.children.clear()
-        node.children.putAll(sorted)
+        localNodeIndex[node.absolutePath] = node
+
+        /**
+        compareBy it.lowercase() will override like in the case of whatsapp having
+        Whatsapp AND whatsapp
+        */
+        //val sorted = node.children.toSortedMap(compareBy<String> { it.lowercase() }.thenBy { it })
+        //node.children.clear()
+        //node.children.putAll(sorted)
     }
 
     private fun findParentFolder(audioList: List<Song>): String {

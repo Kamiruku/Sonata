@@ -85,7 +85,20 @@ fun FolderScreen(
             ) { child ->
                 val flat = remember(child.absolutePath, allPaths) {
                     if (child.isFolder) {
-                        val startIndex = allPaths.findFirstIndex(child.absolutePath)
+                        val folderPath = child.absolutePath + '/'
+                        val startIndex = allPaths.findFirstIndex(folderPath)
+
+                        check(allPaths[startIndex].startsWith(folderPath)) {
+                            "start index: $startIndex " +
+                                    "\nfound path at: ${allPaths[startIndex]} " +
+                                    "\nwhich did not start with $folderPath"
+                        }
+                        check(allPaths[startIndex + child.musicTotal - 1].startsWith(folderPath)) {
+                            "end index: ${startIndex + child.musicTotal - 1} " +
+                                    "\nfound path at: ${allPaths[startIndex + child.musicTotal - 1]} " +
+                                    "\nwhich did not start with $folderPath"
+                        }
+
                         allPaths.subList(startIndex, startIndex + child.musicTotal)
                     } else {
                         emptyList()

@@ -35,7 +35,7 @@ class SharedViewModel(
     private val _songList = MutableStateFlow<List<FileNode>>(emptyList())
     val songList: StateFlow<List<FileNode>> = _songList.asStateFlow()
 
-    private val nodeIndex = mutableMapOf<String, FileNode>()
+    private var nodeIndex: Map<String, FileNode> = emptyMap()
 
     private val _uiState = MutableStateFlow<LibraryUIState>(LibraryUIState.Loading)
     val uiState: StateFlow<LibraryUIState> = _uiState.asStateFlow()
@@ -45,18 +45,23 @@ class SharedViewModel(
     val filteredSongs: StateFlow<List<Song>> = _filteredSongs.asStateFlow()
 
     private val _selectedItems = MutableStateFlow<Set<String>>(emptySet())
-    var selectedItems: StateFlow<Set<String>> = _selectedItems.asStateFlow()
+    val selectedItems: StateFlow<Set<String>> = _selectedItems.asStateFlow()
 
     private val _inSelectionMode = MutableStateFlow(false)
     val inSelectionMode: StateFlow<Boolean> = _inSelectionMode.asStateFlow()
 
     private var dbSongList: List<Song>? = null
 
-    fun setList(rootNodes: List<FileNode>) {
+    private fun setList(rootNodes: List<FileNode>) {
         _rootNodes.value = rootNodes
-        nodeIndex.clear()
-        buildIndex(rootNodes)
-        _songList.value = nodeIndex.values.filter { !it.isFolder }.sortedBy { it.absolutePath }
+        //nodeIndex.clear()
+        //buildIndex(rootNodes)
+        /**
+         * songList should be sorted without explicitly sorting because songRepository
+         * songs are returned sorted by path, which means the tree should be sorted
+         * and computeTotal should preserve this order.
+         */
+        _songList.value = nodeIndex.values.filter { !it.isFolder }//.sortedBy { it.absolutePath }
         //_songList.value = rootNodes.flattenSongs().sortedBy { it.path }
 
         _uiState.value =
@@ -66,7 +71,7 @@ class SharedViewModel(
 
     private fun buildIndex(nodes: List<FileNode>) {
         fun addToIndex(node: FileNode) {
-            nodeIndex[node.absolutePath] = node
+            nodeIndex[node.absolutePath] //= node
             for (child in node.children.values) {
                 addToIndex(child)
             }
@@ -129,25 +134,50 @@ class SharedViewModel(
                 src.removePrefix("$root/") + '/'
             }.sorted()
 
-            for (relSrc in relSnapShotPaths) {
-                val index = songString.findFirstIndex(relSrc)
-                if (index >= songString.size) continue
-                //should be no empty folders
-                if (songString[index].startsWith(relSrc)) {
-                    indexList.add(index)
+            for (relSrc in relSnapShotPaths.withIndex()) {
+                val folderIndex = songString.findFirstIndex(relSrc.value)
+
+                check(folderIndex < songString.size) {
+                    "cached songs index: $folderIndex is bigger than amount of songs: ${songString.size}"
                 }
+                check(songString[folderIndex].startsWith(relSrc.value)) {
+                    "cached songs: ${songString[folderIndex]} " +
+                            "\ndid not start with ${relSrc.value} " +
+                            "\nfor its index: $folderIndex"
+                }
+                if (relSrc.index != 0) {
+                    check(songString[folderIndex - 1].startsWith(relSnapShotPaths[relSrc.index - 1])) {
+                        "cached songs end boundary: " +
+                                "\n${songString[folderIndex - 1]} " +
+                                "\ndid not start with ${relSnapShotPaths[relSrc.index - 1]}"
+                    }
+                }
+
+                indexList.add(folderIndex)
             }
 
-            Log.d("IndexList", indexList.toString())
+            check(indexList[0] == 0) {
+                "cached songs indexList had: ${indexList[0]} at index 0 instead of 0\n" +
+                    indexList.toString()
+            }
+
+            val localNodeIndex = mutableMapOf<String, FileNode>()
+            var listLength = 0
 
             for (i in indexList.indices) {
                 val start = indexList[i]
                 val end = if (i != indexList.lastIndex) indexList[i + 1] else songList.size
                 val list = songList.subList(start, end)
-                val rootNode = FileTreeBuilder.buildTree(list, relSnapShotPaths[i])
+                listLength += list.size
+                val rootNode = FileTreeBuilder.buildTree(list, relSnapShotPaths[i], localNodeIndex)
                 pathList.add(rootNode)
             }
 
+            check(listLength == songList.size) {
+                "cached songs listLength: $listLength was not equal to songListSize: ${songList.size}"
+            }
+
+            nodeIndex = localNodeIndex
             setList(pathList)
             dbSongList = songList
         }
@@ -189,25 +219,52 @@ class SharedViewModel(
                 src.removePrefix("$root/") + '/'
             }.sorted()
 
-            for (relSrc in relSavedPaths) {
-                val index = songString.findFirstIndex(relSrc)
-                if (index >= songString.size) continue
-                //should be no empty folders
-                if (songString[index].startsWith(relSrc)) {
-                    indexList.add(index)
+            for (relSrc in relSavedPaths.withIndex()) {
+                val folderIndex = songString.findFirstIndex(relSrc.value)
+
+                check(folderIndex < songString.size) {
+                    "syncMusic index: $folderIndex is bigger than amount of songs: ${songString.size}"
+                }
+                check(songString[folderIndex].startsWith(relSrc.value)) {
+                    "syncMusic songs: ${songString[folderIndex]} " +
+                            "\ndid not start with ${relSrc.value} " +
+                            "\nfor its index: $folderIndex"
+                }
+                if (relSrc.index != 0) {
+                    check(songString[folderIndex - 1].startsWith(relSavedPaths[relSrc.index - 1])) {
+                        "syncMusic end boundary: " +
+                                "\n${songString[folderIndex - 1]} " +
+                                "\ndid not start with ${relSavedPaths[relSrc.index - 1]}"
+                    }
+                }
+
+                indexList.add(folderIndex)
+            }
+
+            if (indexList.isNotEmpty()) {
+                check(indexList[0] == 0) {
+                    "syncMusic indexList had: ${indexList[0]} at index 0 instead of 0\n" +
+                            indexList.toString()
                 }
             }
 
-            Log.d("IndexList", indexList.toString())
+            val localNodeIndex = mutableMapOf<String, FileNode>()
+            var listLength = 0
 
             for (i in indexList.indices) {
                 val start = indexList[i]
                 val end = if (i != indexList.lastIndex) indexList[i + 1] else songList.size
                 val list = songList.subList(start, end)
-                val rootNode = FileTreeBuilder.buildTree(list, relSavedPaths[i])
+                listLength += list.size
+                val rootNode = FileTreeBuilder.buildTree(list, relSavedPaths[i], localNodeIndex)
                 pathList.add(rootNode)
             }
 
+            check(listLength == songList.size) {
+                "syncMusic listLength: $listLength was not equal to songListSize: ${songList.size}"
+            }
+
+            nodeIndex = localNodeIndex
             setList(pathList)
         }
     }
@@ -300,7 +357,7 @@ class SharedViewModel(
         }
     }
 
-    fun SongEntity.toUiModel(): Song {
+    private fun SongEntity.toUiModel(): Song {
         return Song(
             iD = this.mediaStoreId,
             albumId = this.mediaStoreAlbumId,

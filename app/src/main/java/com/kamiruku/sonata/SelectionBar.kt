@@ -65,8 +65,21 @@ fun SelectionBar(
         when (val currentRoute = currentStack?.last()) {
             is SonataRoute.Folder -> {
                 val curPath = currentRoute.absolutePath
-                val curNode = viewModel.findNode(curPath) ?: return@remember emptyList()
+                val curNode = viewModel.findNode(curPath)
+                    ?: error("couldn't find node for: $curPath")
                 val startIndex = allPaths.findFirstIndex(curPath)
+
+                check(allPaths[startIndex].startsWith("$curPath/")) {
+                    "start index: $startIndex " +
+                            "\nfound path at: ${allPaths[startIndex]} " +
+                            "\nwhich did not start with $curPath/"
+                }
+                check(allPaths[startIndex + curNode.musicTotal - 1].startsWith("$curPath/")) {
+                    "end index: ${startIndex + curNode.musicTotal - 1} " +
+                            "\nfound path at: ${allPaths[startIndex + curNode.musicTotal - 1]} " +
+                            "\nwhich did not start with $curPath/"
+                }
+
                 allPaths.subList(startIndex, startIndex + curNode.musicTotal)
             }
             is SonataRoute.AllSongs -> {
@@ -209,6 +222,7 @@ fun SelectionBar(
                                 val node = viewModel.findNode(path) ?: run {
                                     android.util.Log.d("Selected folder nav", "no node for: $path")
                                     continue
+                                    //notes: should always be missing one node
                                 }
                                 routes.add(SonataRoute.Folder(node.absolutePath))
                             }
