@@ -142,8 +142,13 @@ fun SonataNavHost(
         entry<SonataRoute.Folder>(
             metadata = transitionMetadata
         ) { key ->
-            val node = viewModel.findNode(key.absolutePath)
-                ?: error("couldn't find node for: ${key.absolutePath}")
+            val node = viewModel.findNode(key.absolutePath) ?: run {
+                android.util.Log.d("folder find node","couldn't find node for: ${key.absolutePath}")
+                LaunchedEffect(true) {
+                    navigator.goBack()
+                }
+                return@entry
+            }
 
             LaunchedEffect(key.absolutePath) {
                 viewModel.clearSelected()

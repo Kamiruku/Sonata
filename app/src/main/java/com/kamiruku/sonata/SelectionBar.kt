@@ -65,8 +65,10 @@ fun SelectionBar(
         when (val currentRoute = currentStack?.last()) {
             is SonataRoute.Folder -> {
                 val curPath = currentRoute.absolutePath
-                val curNode = viewModel.findNode(curPath)
-                    ?: error("couldn't find node for: $curPath")
+                val curNode = viewModel.findNode(curPath) ?: run {
+                    android.util.Log.d("selection find node","couldn't find node for: $curPath")
+                    return@remember emptyList()
+                }
                 val startIndex = allPaths.findFirstIndex(curPath) { it }
 
                 check(allPaths[startIndex].startsWith("$curPath/")) {
