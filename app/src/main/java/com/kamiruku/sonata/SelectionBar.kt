@@ -62,24 +62,25 @@ fun SelectionBar(
     val currentStack = state.backStacks[state.topLevelRoute]
     val currentRoute = currentStack?.last()
     val flat = remember(currentRoute, allPaths, filteredSongs) {
-        when (val currentRoute = currentStack?.last()) {
+        when (currentRoute) {
             is SonataRoute.Folder -> {
                 val curPath = currentRoute.absolutePath
                 val curNode = viewModel.findNode(curPath) ?: run {
                     android.util.Log.d("selection find node","couldn't find node for: $curPath")
                     return@remember emptyList()
                 }
-                val startIndex = allPaths.findFirstIndex(curPath) { it }
+                val folderPath = "$curPath/"
+                val startIndex = allPaths.findFirstIndex(folderPath) { it }
 
-                check(allPaths[startIndex].startsWith("$curPath/")) {
+                check(allPaths[startIndex].startsWith(folderPath)) {
                     "start index: $startIndex " +
                             "\nfound path at: ${allPaths[startIndex]} " +
-                            "\nwhich did not start with $curPath/"
+                            "\nwhich did not start with $folderPath"
                 }
-                check(allPaths[startIndex + curNode.musicTotal - 1].startsWith("$curPath/")) {
+                check(allPaths[startIndex + curNode.musicTotal - 1].startsWith(folderPath)) {
                     "end index: ${startIndex + curNode.musicTotal - 1} " +
                             "\nfound path at: ${allPaths[startIndex + curNode.musicTotal - 1]} " +
-                            "\nwhich did not start with $curPath/"
+                            "\nwhich did not start with $folderPath"
                 }
 
                 allPaths.subList(startIndex, startIndex + curNode.musicTotal)

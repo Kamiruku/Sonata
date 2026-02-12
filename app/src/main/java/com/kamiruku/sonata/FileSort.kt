@@ -150,11 +150,11 @@ object FileTreeBuilder {
     }
 
     private fun computeTotal(node: FileNode, localNodeIndex: MutableMap<String, FileNode>) {
+        localNodeIndex[node.absolutePath] = node
         if (!node.isFolder) {
             node.musicTotal = 1
             node.durationTotal = node.song?.duration ?: 0
             node.albumId = node.song?.albumId ?: 0L
-            localNodeIndex[node.absolutePath] = node
             return
         }
 
@@ -172,7 +172,5 @@ object FileTreeBuilder {
         node.musicTotal = count
         node.durationTotal = duration
         node.albumId = albumId ?: 0L
-
-        localNodeIndex[node.absolutePath] = node
     }
 }
