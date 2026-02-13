@@ -8,7 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.kamiruku.sonata.datastore.DataStoreInstance
 import com.kamiruku.sonata.db.SongEntity
 import com.kamiruku.sonata.db.SongRepository
-import com.kamiruku.sonata.utils.findFirstIndex
+import com.kamiruku.sonata.utils.folderInsertionIndex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -146,7 +146,7 @@ class SharedViewModel(
         }.sorted()
 
         for (relSrc in relPaths.withIndex()) {
-            val folderIndex = songList.findFirstIndex(relSrc.value) { it.path }
+            val folderIndex = songList.folderInsertionIndex(relSrc.value) { it.path }
 
             check(folderIndex < songList.size) {
                 "folder index: $folderIndex is bigger than amount of songs: ${songList.size}"

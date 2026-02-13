@@ -5,6 +5,7 @@ import android.net.Uri
 import android.provider.MediaStore
 import com.kamiruku.sonata.FileNode
 import java.util.Locale
+import kotlin.text.startsWith
 
 fun getAlbumArt(albumId: Long): Uri =
     ContentUris.withAppendedId(
@@ -25,12 +26,12 @@ fun Long.toTime(): String {
     else String.format(Locale.US, "%02d:%02d:%02d", hours, mins, secs)
 }   
 
-fun <T> List<T>.findFirstIndex(curPath: String, selector: (T) -> String): Int {
-    return binarySearch(this, 0, this.size, curPath, selector)
+fun <T> List<T>.folderInsertionIndex(curPath: String, selector: (T) -> String): Int {
+    return lowerBound(this, 0, this.size, curPath, selector)
 }
 
 @Suppress("SameParameterValue")
-private inline fun <T> binarySearch(
+private inline fun <T> lowerBound(
     list: List<T>, fromIndex: Int, toIndex: Int, key: String, selector: (T) -> String
 ): Int {
     var low = fromIndex
@@ -47,4 +48,50 @@ private inline fun <T> binarySearch(
         else error("index found for $key which should not have been found")
     }
     return low
+}
+
+private fun FileNode.getSongPathsRecursively(): List<String> {
+    val result = mutableListOf<String>()
+
+    fun dfs(node: FileNode) {
+        if (!node.isFolder) {
+            node.song?.let { song ->
+                result.add(song.path)
+            }
+            return
+        }
+
+        for (child in node.children.values) {
+            dfs(child)
+        }
+    }
+
+    dfs(this)
+
+    check(result.size == this.musicTotal) {
+        "result size: ${result.size} is not the same as music total: ${this.musicTotal}"
+    }
+    return result
+}
+
+fun FileNode.getAllSongPaths(allPaths: List<String>): List<String> {
+    if (this.musicTotal > 18) {
+        val folderPath = this.absolutePath + '/'
+        val startIndex = allPaths.folderInsertionIndex(folderPath) { it }
+
+        check(allPaths[startIndex].startsWith(folderPath)) {
+            "start index: $startIndex " +
+                    "\nfound path at: ${allPaths[startIndex]} " +
+                    "\nwhich did not start with $folderPath"
+        }
+        check(allPaths[startIndex + this.musicTotal - 1].startsWith(folderPath)) {
+            "end index: ${startIndex + this.musicTotal - 1} " +
+                    "\nfound path at: ${allPaths[startIndex + this.musicTotal - 1]} " +
+                    "\nwhich did not start with $folderPath"
+        }
+
+        return allPaths.subList(startIndex, startIndex + this.musicTotal)
+    }
+
+    return this.getSongPathsRecursively()
 }

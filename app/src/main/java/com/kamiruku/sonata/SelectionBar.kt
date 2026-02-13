@@ -41,7 +41,7 @@ import androidx.navigation3.runtime.NavKey
 import com.kamiruku.sonata.navigation.Navigator
 import com.kamiruku.sonata.navigation.SonataRoute
 import com.kamiruku.sonata.ui.components.SongDetailsDialog
-import com.kamiruku.sonata.utils.findFirstIndex
+import com.kamiruku.sonata.utils.getAllSongPaths
 
 @Composable
 fun SelectionBar(
@@ -69,21 +69,7 @@ fun SelectionBar(
                     android.util.Log.d("selection find node","couldn't find node for: $curPath")
                     return@remember emptyList()
                 }
-                val folderPath = "$curPath/"
-                val startIndex = allPaths.findFirstIndex(folderPath) { it }
-
-                check(allPaths[startIndex].startsWith(folderPath)) {
-                    "start index: $startIndex " +
-                            "\nfound path at: ${allPaths[startIndex]} " +
-                            "\nwhich did not start with $folderPath"
-                }
-                check(allPaths[startIndex + curNode.musicTotal - 1].startsWith(folderPath)) {
-                    "end index: ${startIndex + curNode.musicTotal - 1} " +
-                            "\nfound path at: ${allPaths[startIndex + curNode.musicTotal - 1]} " +
-                            "\nwhich did not start with $folderPath"
-                }
-
-                allPaths.subList(startIndex, startIndex + curNode.musicTotal)
+                curNode.getAllSongPaths(allPaths)
             }
             is SonataRoute.AllSongs -> {
                 allPaths
