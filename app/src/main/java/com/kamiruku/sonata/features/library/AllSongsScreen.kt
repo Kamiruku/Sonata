@@ -96,14 +96,14 @@ fun AllSongsScreen(
                     node = node,
                     onClick = {
                         if (inSelectionMode) {
-                            onToggleSelect(node.song?.path ?: "")
+                            node.song?.let { onToggleSelect(it.path) }
                         } else {
                             node.song?.let(onPlay)
                         }
                     },
                     onLongClick = {
                         if (!inSelectionMode) {
-                            onToggleSelect(node.song?.path ?: "")
+                            node.song?.let { onToggleSelect(it.path) }
                         }
                     }
                 )

@@ -63,7 +63,7 @@ class MainActivity : FragmentActivity() {
         }
     }
 
-    fun checkPermission(loadMusic: () -> Unit) {
+    private fun checkPermission(loadMusic: () -> Unit) {
         if (ActivityCompat.checkSelfPermission(
                 this@MainActivity,
                 Manifest.permission.READ_MEDIA_AUDIO

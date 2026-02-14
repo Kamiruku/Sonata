@@ -84,57 +84,41 @@ fun FolderScreen(
                 key = { it.absolutePath }
             ) { child ->
                 val flat = remember(child.absolutePath, allPaths) {
+                    if (child.isFolder) child.getAllSongPaths(allPaths)
+                    else emptyList()
+                }
+
+                val isSelected = if (child.isFolder) {
+                    flat.isNotEmpty() && selectedItems.containsAll(flat)
+                } else {
+                    child.song?.path in selectedItems
+                }
+
+                val onClick: () -> Unit = {
                     if (child.isFolder) {
-                        child.getAllSongPaths(allPaths)
+                        if (inSelectionMode) onToggleSelectFolder(flat)
+                        else onOpen(child)
                     } else {
-                        emptyList()
+                        if (inSelectionMode) child.song?.let { onToggleSelect(it.path) }
+                        else child.song?.let(onPlay)
                     }
                 }
 
-                val isSelected = if (!child.isFolder) {
-                    child.song?.path in selectedItems
-                } else {
-                    selectedItems.containsAll(flat)
+                val onLongClick: () -> Unit = {
+                    if (child.isFolder) {
+                        if (!inSelectionMode) onToggleSelectFolder(flat)
+                    } else {
+                        if (!inSelectionMode) child.song?.let { onToggleSelect(it.path) }
+                    }
                 }
 
-                if (child.isFolder) {
-                    FileListItem(
-                        isSelected = isSelected,
-                        inSelectionMode = inSelectionMode,
-                        node = child,
-                        onClick = {
-                            if (inSelectionMode) {
-                                onToggleSelectFolder(flat)
-                            } else {
-                                onOpen(child)
-                            }
-                        },
-                        onLongClick = {
-                            if (!inSelectionMode) {
-                                onToggleSelectFolder(flat)
-                            }
-                        }
-                    )
-                } else {
-                    FileListItem(
-                        isSelected = isSelected,
-                        inSelectionMode = inSelectionMode,
-                        node = child,
-                        onClick = {
-                            if (inSelectionMode) {
-                                onToggleSelect(child.song?.path ?: "")
-                            } else {
-                                child.song?.let(onPlay)
-                            }
-                        },
-                        onLongClick = {
-                            //do nothing if already in selection mode
-                            if (!inSelectionMode) {
-                                onToggleSelect(child.song?.path ?: "")
-                            }
-                        }
-                    )
-                }
+                FileListItem(
+                    isSelected = isSelected,
+                    inSelectionMode = inSelectionMode,
+                    node = child,
+                    onClick = onClick,
+                    onLongClick = onLongClick
+                )
             }
 
             if (isBiggerThanScreen) {
