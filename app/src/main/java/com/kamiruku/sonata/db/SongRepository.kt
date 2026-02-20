@@ -28,7 +28,23 @@ class SongRepository(context: Context) {
         }
     }
 
-    suspend fun getSongByTitle(q: String): List<SongEntity> {
-        return songDao.searchByTitle("%$q%")
+    suspend fun getSongAll(q: String): List<SongEntity> {
+        return songDao.searchByAll("%$q%")
+    }
+
+    suspend fun getArtists(q: String): List<String> {
+        return songDao.searchArtists("%$q%")
+    }
+
+    suspend fun getArtistSongs(artist: String): List<SongEntity> {
+        return songDao.getSongsByArtist(artist)
+    }
+
+    suspend fun getAlbums(q: String): List<String> {
+        return songDao.searchAlbums("%$q%")
+    }
+
+    suspend fun getAlbumSongs(album: String): List<SongEntity> {
+        return songDao.getSongsByAlbum(album)
     }
 }

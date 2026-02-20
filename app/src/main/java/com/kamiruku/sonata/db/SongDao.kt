@@ -13,14 +13,26 @@ interface SongDao {
     @Query("SELECT * FROM songs WHERE path = :path LIMIT 1")
     suspend fun getSong(path: String): SongEntity?
 
-    @Query("SELECT * FROM songs WHERE title LIKE :query")
-    suspend fun searchByTitle(query: String): List<SongEntity>
+    @Query("""
+            SELECT * FROM songs WHERE 
+            title LIKE :query OR 
+            artists LIKE :query OR 
+            album_artist LIKE :query OR
+            album LIKE :query
+    """)
+    suspend fun searchByAll(query: String): List<SongEntity>
+
+    @Query("SELECT DISTINCT artists FROM songs WHERE artists LIKE :query")
+    suspend fun searchArtists(query: String): List<String>
+
+    @Query("SELECT * FROM songs WHERE artists = :artist")
+    suspend fun getSongsByArtist(artist: String): List<SongEntity>
+
+    @Query("SELECT DISTINCT album FROM songs WHERE album LIKE :query")
+    suspend fun searchAlbums(query: String): List<String>
 
     @Query("SELECT * FROM songs WHERE album = :album")
     suspend fun getSongsByAlbum(album: String): List<SongEntity>
-
-    @Query("SELECT * FROM songs WHERE artists LIKE :artist")
-    suspend fun getSongsByArtist(artist: String): List<SongEntity>
 
     @Query("SELECT COUNT(*) FROM songs")
     suspend fun getSongCount(): Int

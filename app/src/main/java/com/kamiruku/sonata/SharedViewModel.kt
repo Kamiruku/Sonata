@@ -4,6 +4,7 @@ import android.app.Application
 import android.os.Environment
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.viewModelScope
 import com.kamiruku.sonata.datastore.DataStoreInstance
 import com.kamiruku.sonata.db.SongEntity
@@ -40,9 +41,10 @@ class SharedViewModel(
     private val _uiState = MutableStateFlow<LibraryUIState>(LibraryUIState.Loading)
     val uiState: StateFlow<LibraryUIState> = _uiState.asStateFlow()
 
-    val query = MutableStateFlow("")
-    private val _filteredSongs = MutableStateFlow<List<Song>>(emptyList())
-    val filteredSongs: StateFlow<List<Song>> = _filteredSongs.asStateFlow()
+    private val _query = MutableStateFlow<Pair<String, String>>(Pair("", ""))
+    val query: StateFlow<Pair<String, String>> = _query.asStateFlow()
+    private val _filteredSongs = MutableStateFlow<Map<String, List<Song>>>(emptyMap())
+    val filteredSongs: StateFlow<Map<String, List<Song>>> = _filteredSongs.asStateFlow()
 
     private val _selectedItems = MutableStateFlow<Set<String>>(emptySet())
     val selectedItems: StateFlow<Set<String>> = _selectedItems.asStateFlow()
@@ -269,16 +271,37 @@ class SharedViewModel(
     init {
         getPathSrcs()
         viewModelScope.launch {
-            query
+            _query
                 .debounce(400)
                 .mapLatest { q ->
-                    if (q.isBlank()) emptyList<Song>()
+                    if (q.first.isEmpty()) emptyMap<String, List<Song>>()
                     else withContext(Dispatchers.IO) {
-                        songRepository.getSongByTitle(q).map { it.toUiModel() }
+                        when (q.first) {
+                            "all" -> {
+                                mapOf("all" to songRepository.getSongAll(q.second).map { it.toUiModel() })
+                            }
+                            "artist" -> {
+                                songRepository.getArtists(q.second).associateBy(
+                                    keySelector = { it },
+                                    valueTransform = { songRepository.getArtistSongs(it).map { it.toUiModel() } }
+                                )
+                            }
+                            "album" -> {
+                                songRepository.getAlbums(q.second).associateBy(
+                                    keySelector = { it },
+                                    valueTransform = { songRepository.getAlbumSongs(it).map { it.toUiModel() } }
+                                )
+                            }
+                            else -> emptyMap<String, List<Song>>()
+                        }
                     }
                 }
                 .collectLatest { _filteredSongs.value = it }
         }
+    }
+
+    fun setQuery(pair: Pair<String, String>) {
+        _query.value = pair
     }
 
     private fun SongEntity.toUiModel(): Song {

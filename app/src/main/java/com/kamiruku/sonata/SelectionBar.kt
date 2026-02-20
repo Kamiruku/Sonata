@@ -57,6 +57,7 @@ fun SelectionBar(
         songList.mapNotNull { it.song?.path }
     }
 
+    val query by viewModel.query.collectAsState()
     val filteredSongs by viewModel.filteredSongs.collectAsState()
 
     val currentStack = state.backStacks[state.topLevelRoute]
@@ -75,7 +76,16 @@ fun SelectionBar(
                 allPaths
             }
             is SonataRoute.Search -> {
-                filteredSongs.map { it.path }
+                if (query.first == "all") {
+                    filteredSongs[query.first]?.map { it.path } ?: emptyList()
+                }
+                else {
+                    filteredSongs.values.flatMap { list -> list.map { it.path } }
+                }
+            }
+            is SonataRoute.SearchGroup -> {
+                val title = currentRoute.title
+                filteredSongs[title]?.map { it.path } ?: emptyList()
             }
             else -> emptyList()
         }

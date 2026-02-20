@@ -13,9 +13,11 @@ sealed interface SonataRoute: NavKey {
     @Serializable data object NowPlaying : NavKey
 
     @Serializable data object Search: NavKey
-    @Serializable data object SettingsHome: NavKey
-    @Serializable data object SettingsGeneral: NavKey
-    @Serializable data object SettingsLibrary: NavKey
-    @Serializable data object SettingsAudio: NavKey
-    @Serializable data object SettingsAbout: NavKey
+    @Serializable data class SearchGroup(val title: String) : NavKey
+
+    @Serializable data object SettingsHome : NavKey
+    @Serializable data object SettingsGeneral : NavKey
+    @Serializable data object SettingsLibrary : NavKey
+    @Serializable data object SettingsAudio : NavKey
+    @Serializable data object SettingsAbout : NavKey
 }

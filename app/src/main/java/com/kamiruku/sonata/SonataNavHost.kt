@@ -1,6 +1,7 @@
 package com.kamiruku.sonata
 
 import SwipeBackContainer
+import android.util.Log
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -10,7 +11,6 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -22,6 +22,7 @@ import com.kamiruku.sonata.features.library.AllSongsScreen
 import com.kamiruku.sonata.features.library.FileRootScreen
 import com.kamiruku.sonata.features.library.FolderScreen
 import com.kamiruku.sonata.features.library.LibraryScreen
+import com.kamiruku.sonata.features.search.GroupScreen
 import com.kamiruku.sonata.features.search.SearchScreen
 import com.kamiruku.sonata.features.settings.SettingsScreen
 import com.kamiruku.sonata.navigation.Navigator
@@ -43,6 +44,8 @@ fun SonataNavHost(
     val allSongsPath = remember(songList) {
         songList.mapNotNull { it.song?.path }
     }
+
+    val filteredSongs by viewModel.filteredSongs.collectAsState()
 
     val inSelectionMode by viewModel.inSelectionMode.collectAsState()
     val selectedItems by viewModel.selectedItems.collectAsState()
@@ -143,7 +146,7 @@ fun SonataNavHost(
             metadata = transitionMetadata
         ) { key ->
             val node = viewModel.findNode(key.absolutePath) ?: run {
-                android.util.Log.d("folder find node","couldn't find node for: ${key.absolutePath}")
+                Log.d("folder find node","couldn't find node for: ${key.absolutePath}")
                 LaunchedEffect(true) {
                     navigator.goBack()
                 }
@@ -180,19 +183,12 @@ fun SonataNavHost(
         }
 
         entry<SonataRoute.Search> {
-            val textFieldState = rememberTextFieldState()
-            val filteredSongs by viewModel.filteredSongs.collectAsState()
-
             LaunchedEffect(Unit) {
                 viewModel.clearSelected()
             }
 
             SearchScreen(
-                textFieldState,
-                onQueryChange = {
-                    viewModel.query.value = textFieldState.text.toString()
-                },
-                searchResults = filteredSongs,
+                viewModel = viewModel,
                 onClick = { song ->
                     println(song.title)
                 },
@@ -201,7 +197,47 @@ fun SonataNavHost(
                 onToggleSelect = { path ->
                     viewModel.toggleSelect(path)
                 },
+                onToggleSelectGroup = { paths ->
+                    viewModel.toggleSelect(paths)
+                },
+                onOpen = { title ->
+                    navigator.navigate(SonataRoute.SearchGroup(title))
+                }
             )
+        }
+
+        entry<SonataRoute.SearchGroup>(
+            metadata = transitionMetadata
+        ) { key ->
+            val list = filteredSongs[key.title] ?: run {
+                Log.d("group find list","couldn't find list for: ${key.title}")
+                LaunchedEffect(true) {
+                    navigator.goBack()
+                }
+                return@entry
+            }
+
+            LaunchedEffect(Unit) {
+                viewModel.clearSelected()
+            }
+
+            SwipeBackContainer(onBack = {
+                navigator.goBack()
+            }) {
+                GroupScreen(
+                    title = key.title,
+                    list = list,
+                    selectedItems = selectedItems,
+                    inSelectionMode = inSelectionMode,
+                    onToggleSelect = { path ->
+                        viewModel.toggleSelect(path)
+                    },
+                    onPlay = { song ->
+                        println("Clicked ${song.title}")
+                    },
+                    onScrollDirectionChanged = onScrollDirectionChanged,
+                )
+            }
         }
 
         entry<SonataRoute.NowPlaying> {
