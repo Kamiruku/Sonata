@@ -4,7 +4,6 @@ import android.app.Application
 import android.os.Environment
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.viewModelScope
 import com.kamiruku.sonata.datastore.DataStoreInstance
 import com.kamiruku.sonata.db.SongEntity
@@ -272,9 +271,9 @@ class SharedViewModel(
         getPathSrcs()
         viewModelScope.launch {
             _query
-                .debounce(400)
+                .debounce(100)
                 .mapLatest { q ->
-                    if (q.first.isEmpty()) emptyMap<String, List<Song>>()
+                    if (q.first.isEmpty() || q.second.isEmpty()) emptyMap<String, List<Song>>()
                     else withContext(Dispatchers.IO) {
                         when (q.first) {
                             "all" -> {

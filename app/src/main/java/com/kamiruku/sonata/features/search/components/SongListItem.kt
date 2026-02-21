@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -41,16 +40,16 @@ fun SongListItem(
     isSelected: Boolean = false,
     inSelectionMode: Boolean = false,
     song: Song,
-    onClick: (Song) -> Unit,
-    onLongClick: (Song) -> Unit
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
 ) {
     Box(Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .combinedClickable(
-                    onClick = { onClick(song) },
-                    onLongClick = { onLongClick(song) }
+                    onClick = { onClick() },
+                    onLongClick = { onLongClick() }
                 )
                 .padding(horizontal = 25.dp)
                 .padding(vertical = 16.dp),

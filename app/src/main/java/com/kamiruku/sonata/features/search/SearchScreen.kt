@@ -32,6 +32,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.google.samples.apps.nowinandroid.core.designsystem.component.scrollbar.DraggableScrollbar
 import com.google.samples.apps.nowinandroid.core.designsystem.component.scrollbar.rememberDraggableScroller
@@ -45,21 +46,21 @@ import com.kamiruku.sonata.features.search.components.SongListItem
 @Composable
 fun SearchScreen(
     viewModel: SharedViewModel,
-    onClick: (Song) -> Unit,
     selectedItems: Set<String>,
     inSelectionMode: Boolean,
     onToggleSelect: (String) -> Unit,
     onToggleSelectGroup: (List<String>) -> Unit,
-    onOpen: (String) -> Unit
+    onOpen: (String) -> Unit,
+    onClick: (Song) -> Unit,
 ) {
     var searchBarExpanded by rememberSaveable { mutableStateOf(false) }
     var dropDownExpanded by remember { mutableStateOf(false) }
 
     val listState = rememberLazyListState()
 
-    var type by rememberSaveable { mutableStateOf("all") }
     val searchResults by viewModel.filteredSongs.collectAsState()
     val query by viewModel.query.collectAsState()
+    var type by rememberSaveable { mutableStateOf(query.first.ifEmpty { "all" }) }
     
     Box(Modifier.fillMaxSize()) {
         SearchBar(
@@ -84,49 +85,39 @@ fun SearchScreen(
                             )
                         }
 
+                        val dropDown = listOf("all", "artist", "album")
+
                         DropdownMenu(
                             expanded = dropDownExpanded,
                             onDismissRequest = { dropDownExpanded = false }
                         ) {
-                            DropdownMenuItem(
-                                text = { Text("All") },
-                                onClick = {
-                                    type = "all"
-                                    viewModel.clearSelected()
-                                    viewModel.setQuery(type to query.second)
-                                    dropDownExpanded = false
-                                }
-                            )
-
-                            DropdownMenuItem(
-                                text = { Text("Artist") },
-                                onClick = {
-                                    type = "artist"
-                                    viewModel.clearSelected()
-                                    viewModel.setQuery(type to query.second)
-                                    dropDownExpanded = false
-                                }
-                            )
-
-                            DropdownMenuItem(
-                                text = { Text("Album") },
-                                onClick = {
-                                    type = "album"
-                                    viewModel.clearSelected()
-                                    viewModel.setQuery(type to query.second)
-                                    dropDownExpanded = false
-                                }
-                            )
+                            dropDown.forEach { str ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = str.replaceFirstChar { c -> c.uppercase() },
+                                            color =
+                                                if (type == str) MaterialTheme.colorScheme.primary
+                                                else Color.Unspecified
+                                        )
+                                    },
+                                    onClick = {
+                                        if (type == str) return@DropdownMenuItem
+                                        type = str
+                                        viewModel.clearSelected()
+                                        viewModel.setQuery(type to query.second)
+                                        dropDownExpanded = false
+                                    }
+                                )
+                            }
                         }
                     },
                     trailingIcon = {
                         if (query.second.isNotEmpty()) {
                             IconButton(
                                 onClick = {
-                                    if (!query.second.isEmpty()) {
-                                        viewModel.clearSelected()
-                                        viewModel.setQuery("" to "")
-                                    }
+                                    viewModel.clearSelected()
+                                    viewModel.setQuery("" to "")
                                 }
                             ) {
                                 Icon(
@@ -194,8 +185,6 @@ fun SearchScreen(
                             val key = entry.key
                             val value = entry.value
 
-                            if (key == "all") return@items
-
                             val flat = remember(key, value) {
                                 value.map { it.path }
                             }
@@ -224,12 +213,12 @@ fun SearchScreen(
                 }
 
                 val totalItems =
-                    if (type == "all") searchResults["all"]?.size ?: 0
+                    if (searchResults["all"] != null) searchResults["all"]?.size ?: 0
                     else searchResults.size
 
                 if (totalItems > 25) {
-                    val scrollBarState = listState.scrollbarState(searchResults.size)
-                    val onDrag = listState.rememberDraggableScroller(searchResults.size)
+                    val scrollBarState = listState.scrollbarState(totalItems)
+                    val onDrag = listState.rememberDraggableScroller(totalItems)
 
                     listState.DraggableScrollbar(
                         state = scrollBarState,

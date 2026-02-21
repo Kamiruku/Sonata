@@ -11,6 +11,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -44,8 +45,6 @@ fun SonataNavHost(
     val allSongsPath = remember(songList) {
         songList.mapNotNull { it.song?.path }
     }
-
-    val filteredSongs by viewModel.filteredSongs.collectAsState()
 
     val inSelectionMode by viewModel.inSelectionMode.collectAsState()
     val selectedItems by viewModel.selectedItems.collectAsState()
@@ -103,23 +102,27 @@ fun SonataNavHost(
                 viewModel.clearSelected()
             }
 
+            val listState = rememberLazyListState()
+
             SwipeBackContainer(
-                onBack = { navigator.goBack() }
+                onBack = { navigator.goBack() },
+                listState = listState,
+                size = songList.size,
+                onScrollDirectionChanged = onScrollDirectionChanged
             ) {
                 AllSongsScreen(
+                    listState = listState,
+                    songList = songList,
                     selectedItems = selectedItems,
                     inSelectionMode = inSelectionMode,
                     onToggleSelect = { path ->
                         viewModel.toggleSelect(path)
                     },
-                    songList = songList,
-                    onScrollDirectionChanged = onScrollDirectionChanged,
                     onPlay = { song ->
                         println("Clicked ${song.title}")
                     }
                 )
             }
-
         }
 
         entry<SonataRoute.FolderRoot>(
@@ -130,8 +133,13 @@ fun SonataNavHost(
                 viewModel.setSelectionMode(false)
             }
 
+            val listState = rememberLazyListState()
+
             SwipeBackContainer(
-                onBack = { navigator.goBack() }
+                onBack = { navigator.goBack() },
+                listState = listState,
+                size = roots.size,
+                onScrollDirectionChanged = onScrollDirectionChanged
             ) {
                 FileRootScreen(
                     nodes = roots,
@@ -157,10 +165,17 @@ fun SonataNavHost(
                 viewModel.clearSelected()
             }
 
+            val listState = rememberLazyListState()
+
             SwipeBackContainer(
-                onBack = { navigator.goBack() }
+                onBack = { navigator.goBack() },
+                listState = listState,
+                size = node.children.size,
+                onScrollDirectionChanged = onScrollDirectionChanged
             ) {
                 FolderScreen(
+                    listState = listState,
+                    node = node,
                     allPaths = allSongsPath,
                     selectedItems = selectedItems,
                     inSelectionMode = inSelectionMode,
@@ -170,14 +185,12 @@ fun SonataNavHost(
                     onToggleSelectFolder = { paths ->
                         viewModel.toggleSelect(paths)
                     },
-                    node = node,
                     onOpen = { child ->
                         navigator.navigate(SonataRoute.Folder(child.absolutePath))
                     },
                     onPlay = { song ->
                         println("Clicked ${song.title}")
-                    },
-                    onScrollDirectionChanged = onScrollDirectionChanged
+                    }
                 )
             }
         }
@@ -189,9 +202,6 @@ fun SonataNavHost(
 
             SearchScreen(
                 viewModel = viewModel,
-                onClick = { song ->
-                    println(song.title)
-                },
                 selectedItems = selectedItems,
                 inSelectionMode = inSelectionMode,
                 onToggleSelect = { path ->
@@ -202,9 +212,14 @@ fun SonataNavHost(
                 },
                 onOpen = { title ->
                     navigator.navigate(SonataRoute.SearchGroup(title))
-                }
+                },
+                onClick = { song ->
+                    println(song.title)
+                },
             )
         }
+
+        val filteredSongs by viewModel.filteredSongs.collectAsState()
 
         entry<SonataRoute.SearchGroup>(
             metadata = transitionMetadata
@@ -221,10 +236,16 @@ fun SonataNavHost(
                 viewModel.clearSelected()
             }
 
-            SwipeBackContainer(onBack = {
-                navigator.goBack()
-            }) {
+            val listState = rememberLazyListState()
+
+            SwipeBackContainer(
+                onBack = { navigator.goBack() },
+                listState = listState,
+                size = list.size,
+                onScrollDirectionChanged = onScrollDirectionChanged
+            ) {
                 GroupScreen(
+                    listState = listState,
                     title = key.title,
                     list = list,
                     selectedItems = selectedItems,
@@ -235,7 +256,6 @@ fun SonataNavHost(
                     onPlay = { song ->
                         println("Clicked ${song.title}")
                     },
-                    onScrollDirectionChanged = onScrollDirectionChanged,
                 )
             }
         }
