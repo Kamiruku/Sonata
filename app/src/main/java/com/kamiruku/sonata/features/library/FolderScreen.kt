@@ -13,12 +13,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import coil.request.ImageRequest
 import com.kamiruku.sonata.FileNode
 import com.kamiruku.sonata.Song
 import com.kamiruku.sonata.features.library.components.FileListItem
-import com.kamiruku.sonata.features.library.components.FolderHeader
+import com.kamiruku.sonata.ui.components.ContentHeader
+import com.kamiruku.sonata.utils.getAlbumArt
 import com.kamiruku.sonata.utils.getAllSongPaths
+import com.kamiruku.sonata.utils.toTime
 
 @Composable
 fun FolderScreen(
@@ -32,6 +36,20 @@ fun FolderScreen(
     onOpen: (FileNode) -> Unit,
     onPlay: (Song) -> Unit
 ) {
+    val context = LocalContext.current
+
+    val imageRequest = remember(node.albumId, context) {
+        ImageRequest.Builder(context)
+            .data(getAlbumArt(albumId = node.albumId))
+            .size(1200)
+            .crossfade(true)
+            .build()
+    }
+
+    val subText = remember(node.musicTotal, node.durationTotal) {
+        "${node.musicTotal} | ${node.durationTotal.toTime()}"
+    }
+
     Box {
         LazyColumn(
             state = listState,
@@ -40,7 +58,7 @@ fun FolderScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item(key = node.absolutePath) {
-                FolderHeader(node)
+                ContentHeader(imageRequest, node.name, subText)
             }
 
             items(
