@@ -10,7 +10,8 @@ import kotlin.text.startsWith
 fun getAlbumArt(albumId: Long): Uri =
     ContentUris.withAppendedId(
         MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI,
-        albumId)
+        albumId
+    )
 
 
 fun Long.toTime(): String {
