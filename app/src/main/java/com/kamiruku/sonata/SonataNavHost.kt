@@ -17,6 +17,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.kamiruku.sonata.features.library.AllSongsScreen
@@ -29,6 +30,8 @@ import com.kamiruku.sonata.features.settings.SettingsScreen
 import com.kamiruku.sonata.navigation.Navigator
 import com.kamiruku.sonata.navigation.SonataRoute
 import com.kamiruku.sonata.state.DirectionalLazyListState
+import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun SonataNavHost(
@@ -53,32 +56,34 @@ fun SonataNavHost(
         if (selectedItems.isNotEmpty()) viewModel.setSelectionMode(true)
     }
 
+    val animationDelay = 300
+
     val transitionMetadata = NavDisplay.transitionSpec {
         slideInHorizontally(
             initialOffsetX = { it },
-            animationSpec = tween(300)
+            animationSpec = tween(animationDelay)
         ) + fadeIn(initialAlpha = 0.8f) + scaleIn(initialScale = 0.8f) togetherWith
                 slideOutHorizontally(
                     targetOffsetX = { -it },
-                    animationSpec = tween(300)
+                    animationSpec = tween(animationDelay)
                 ) + fadeOut() + scaleOut(targetScale = 0.8f)
     } + NavDisplay.popTransitionSpec {
         slideInHorizontally(
             initialOffsetX = { -it },
-            animationSpec = tween(300)
+            animationSpec = tween(animationDelay)
         ) + fadeIn(initialAlpha = 0.8f) + scaleIn(initialScale = 0.8f) togetherWith
                 slideOutHorizontally(
                     targetOffsetX = { it },
-                    animationSpec = tween(300)
+                    animationSpec = tween(animationDelay)
                 ) + fadeOut() + scaleOut(targetScale = 0.8f)
     } + NavDisplay.predictivePopTransitionSpec {
         slideInHorizontally(
             initialOffsetX = { -it },
-            animationSpec = tween(300)
+            animationSpec = tween(animationDelay)
         ) + fadeIn(initialAlpha = 0.8f) + scaleIn(initialScale = 0.8f) togetherWith
                 slideOutHorizontally(
                     targetOffsetX = { it },
-                    animationSpec = tween(300)
+                    animationSpec = tween(animationDelay)
                 ) + fadeOut() + scaleOut(targetScale = 0.8f)
     }
 
@@ -290,8 +295,16 @@ fun SonataNavHost(
         }
     }
 
+    val entries = navigationState.toEntries(entryProvider)
+
+    LaunchedEffect(entries.lastOrNull()) {
+        withFrameNanos {  }
+        delay((animationDelay * 0.25).milliseconds)
+        navigator.onTransitionFinished()
+    }
+
     NavDisplay(
-        entries = navigationState.toEntries(entryProvider),
+        entries = entries,
         onBack = { navigator.goBack() }
     )
 }

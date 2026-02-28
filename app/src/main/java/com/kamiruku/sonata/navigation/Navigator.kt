@@ -8,10 +8,13 @@ import com.kamiruku.sonata.NavigationState
  */
 class Navigator(val state: NavigationState){
     fun navigate(route: NavKey, popUpTo: Boolean = false) {
+        if (state.isNavigating) return
         // Single-top
         val currentStack = state.backStacks[state.topLevelRoute] ?:
         error("Stack for ${state.topLevelRoute} not found")
         if (currentStack.last() == route) return
+
+        state.isNavigating = true
 
         if (route in state.backStacks.keys) {
             // This is a top level route, just switch to it.
@@ -29,9 +32,12 @@ class Navigator(val state: NavigationState){
     }
 
     fun navigateList(routes: List<NavKey>) {
+        if (state.isNavigating) return
         val currentStack = state.backStacks[state.topLevelRoute] ?:
         error("Stack for ${state.topLevelRoute} not found") 
         if (currentStack.last() == routes.last()) return
+
+        state.isNavigating = true
 
         val targetTopLevel = routes[0]
         state.topLevelRoute = targetTopLevel
@@ -43,9 +49,12 @@ class Navigator(val state: NavigationState){
     }
 
     fun goBack() {
+        if (state.isNavigating) return
         val currentStack = state.backStacks[state.topLevelRoute] ?:
         error("Stack for ${state.topLevelRoute} not found")
         val currentRoute = currentStack.last()
+
+        state.isNavigating = true
 
         // If we're at the base of the current route, go back to the start route stack.
         if (currentRoute == state.topLevelRoute) {
@@ -53,5 +62,9 @@ class Navigator(val state: NavigationState){
         } else {
             currentStack.removeLastOrNull()
         }
+    }
+
+    fun onTransitionFinished() {
+        state.isNavigating = false
     }
 }

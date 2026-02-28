@@ -5,7 +5,6 @@ import android.net.Uri
 import android.provider.MediaStore
 import com.kamiruku.sonata.FileNode
 import java.util.Locale
-import kotlin.text.startsWith
 
 fun getAlbumArt(albumId: Long): Uri =
     ContentUris.withAppendedId(

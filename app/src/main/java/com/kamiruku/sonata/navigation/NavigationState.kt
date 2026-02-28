@@ -64,6 +64,7 @@ class NavigationState(
         } else {
             listOf(startRoute, topLevelRoute)
         }
+    var isNavigating by mutableStateOf(false)
 }
 
 /**
