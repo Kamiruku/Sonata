@@ -17,6 +17,9 @@ jclass g_hashMapClass = nullptr;
 jmethodID g_hashMapInit = nullptr;
 jmethodID g_hashMapPut = nullptr;
 
+jclass g_pictureObjectClass = nullptr;
+jmethodID g_pictureObjectCtor = nullptr;
+
 jclass g_tagLibObjectClass = nullptr;
 jmethodID g_tagLibObjectCtor = nullptr;
 
@@ -40,10 +43,17 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *) {
     g_stringClass = cacheClass("java/lang/String");
     g_hashMapClass = cacheClass("java/util/HashMap");
     g_tagLibObjectClass = cacheClass("com/kamiruku/sonata/taglib/TagLibObject");
+    g_pictureObjectClass = cacheClass("com/kamiruku/sonata/taglib/PictureObject");
 
     g_hashMapInit = env->GetMethodID(g_hashMapClass, "<init>", "(I)V");
     g_hashMapPut = env->GetMethodID(g_hashMapClass, "put",
                                     "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+
+    g_pictureObjectCtor = env->GetMethodID(
+            g_pictureObjectClass,
+            "<init>",
+            "([BLjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+
     g_tagLibObjectCtor = env->GetMethodID(
             g_tagLibObjectClass,
             "<init>",
@@ -61,6 +71,7 @@ JNIEXPORT void JNI_OnUnload(JavaVM *vm, void *) {
     env->DeleteGlobalRef(g_stringClass);
     env->DeleteGlobalRef(g_hashMapClass);
     env->DeleteGlobalRef(g_tagLibObjectClass);
+    env->DeleteGlobalRef(g_pictureObjectClass);
 }
 
 extern "C"
@@ -70,6 +81,7 @@ Java_com_kamiruku_sonata_taglib_TagLib_getDetails(JNIEnv *env, jobject thiz, jin
     TagLib::String filename(cFileName);
     env->ReleaseStringUTFChars(jfileName, cFileName);
 
+    fd = dup(fd);
     lseek(fd, 0, SEEK_SET);
 
     auto stream = std::make_unique<TagLib::FileStream>(fd, true);
@@ -114,6 +126,79 @@ Java_com_kamiruku_sonata_taglib_TagLib_getDetails(JNIEnv *env, jobject thiz, jin
         return tagLibObj;
     }
     return nullptr;
+}
+
+extern "C"
+JNIEXPORT jobjectArray JNICALL
+Java_com_kamiruku_sonata_taglib_TagLib_getAlbumArt(JNIEnv *env, jobject thiz, jint fd, jstring jfileName) {
+    const char *cFileName = env->GetStringUTFChars(jfileName, nullptr);
+    TagLib::String filename(cFileName);
+    env->ReleaseStringUTFChars(jfileName, cFileName);
+
+    fd = dup(fd);
+    lseek(fd, 0, SEEK_SET);
+
+    auto stream = std::make_unique<TagLib::FileStream>(fd, true);
+    TagLib::File *f = createByExtension(filename, stream.get());
+    TagLib::FileRef file(f);
+
+    if (file.isNull()) {
+        return nullptr;
+    }
+
+    if (file.complexProperties("PICTURE").size() == 0) {
+        return nullptr;
+    }
+
+    auto pictureList = file.complexProperties("PICTURE");
+
+    jobjectArray jPictureArray = env->NewObjectArray(static_cast<jsize>(pictureList.size()),g_pictureObjectClass, nullptr);
+
+    //https://taglib.org/api/classTagLib_1_1FileRef.html#a7ac19ab017f0372e272d9eaa1ce6c574
+
+    for (int i = 0; i < pictureList.size(); i++) {
+        const auto& picture = pictureList[i];
+
+        const auto& data = picture["data"].toByteVector();
+        const auto& description = picture["description"].toString();
+        const auto& pictureType = picture["pictureType"].toString();
+        const auto& mimeType = picture["mimeType"].toString();
+
+        if (data.isEmpty()) {
+            env->SetObjectArrayElement(jPictureArray, i, nullptr);
+            continue;
+        }
+
+        const auto& jData = env->NewByteArray(static_cast<jint>(data.size()));
+        const auto& jDescription = env->NewStringUTF(description.toCString());
+        const auto& jPictureType = env->NewStringUTF(pictureType.toCString());
+        const auto& jMimeType = env->NewStringUTF(mimeType.toCString());
+
+        env->SetByteArrayRegion(
+                jData,
+                0,
+                static_cast<jint>(data.size()),
+                reinterpret_cast<const jbyte *>(data.data())
+        );
+
+        jobject pictureObj = env->NewObject(
+                g_pictureObjectClass,
+                g_pictureObjectCtor,
+                jData,
+                jDescription,
+                jPictureType,
+                jMimeType
+        );
+
+        env->SetObjectArrayElement(jPictureArray, i, pictureObj);
+        env->DeleteLocalRef(jData);
+        env->DeleteLocalRef(jDescription);
+        env->DeleteLocalRef(jPictureType);
+        env->DeleteLocalRef(jMimeType);
+        env->DeleteLocalRef(pictureObj);
+    }
+
+    return jPictureArray;
 }
 
 extern "C"

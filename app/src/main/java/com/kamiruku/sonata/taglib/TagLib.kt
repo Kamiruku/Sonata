@@ -8,4 +8,6 @@ object TagLib {
     external fun getAudioProperties(fd: Int, fileName: String): IntArray
 
     external fun getDetails(fd: Int, fileName: String): TagLibObject
+
+    external fun getAlbumArt(fd: Int, fileName: String): Array<PictureObject?>?
 }

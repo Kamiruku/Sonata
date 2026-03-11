@@ -24,7 +24,6 @@ import com.kamiruku.sonata.features.library.AllSongsScreen
 import com.kamiruku.sonata.features.library.FileRootScreen
 import com.kamiruku.sonata.features.library.FolderScreen
 import com.kamiruku.sonata.features.library.LibraryScreen
-import com.kamiruku.sonata.features.nowPlaying.PlayerScreen
 import com.kamiruku.sonata.features.search.GroupScreen
 import com.kamiruku.sonata.features.search.SearchScreen
 import com.kamiruku.sonata.features.settings.SettingsScreen

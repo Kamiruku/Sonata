@@ -1,6 +1,8 @@
 package com.kamiruku.sonata.ui.components
 
 import android.content.ContentUris
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.provider.MediaStore
 import android.text.format.Formatter
 import androidx.compose.animation.AnimatedVisibility
@@ -8,6 +10,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,25 +22,34 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ArrowDropDown
+import androidx.compose.material.icons.outlined.ArrowDropUp
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import coil.compose.AsyncImage
 import com.kamiruku.sonata.Song
+import com.kamiruku.sonata.taglib.PictureObject
 import com.kamiruku.sonata.taglib.TagLib
 import com.kamiruku.sonata.taglib.TagLibObject
 import com.kamiruku.sonata.utils.toTime
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -52,17 +64,24 @@ fun SongDetailsDialog(
 
     val context = LocalContext.current
     var audioDetails by remember { mutableStateOf<TagLibObject?>(null) }
+    var embAlbumArt by remember { mutableStateOf<List<PictureObject>?>(null) }
 
     LaunchedEffect(song.iD) {
         audioDetails = null
+        embAlbumArt = null
         val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, song.iD)
-        val details = withContext(Dispatchers.IO) {
+        val (details, albumArt) = withContext(Dispatchers.IO) {
             context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
-                val fd = pfd.detachFd()
-                TagLib.getDetails(fd, song.path)
-            }
+                val fd = pfd.fd
+                val details = TagLib.getDetails(fd, song.path)
+                val albumArt = TagLib.getAlbumArt(fd, song.path)?.filterNotNull()
+
+                details to albumArt
+            } ?: (null to null)
         }
+
         audioDetails = details
+        embAlbumArt = albumArt
     }
 
     val preferredTags = remember {
@@ -148,6 +167,10 @@ fun SongDetailsDialog(
 
                     ShowMetadata(priorityTags, lessImportant)
 
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    ShowEmbeddedArt(embAlbumArt)
+
                     Spacer(modifier = Modifier.height(20.dp))
                 }
             }
@@ -196,6 +219,88 @@ fun ShowMetadata(priority: List<Pair<String, Array<String>>>, leftover: Map<Stri
     //the... uh unconventional tags
     leftover.forEach { (key, value) ->
         ShowLabel("<$key>", value.joinToString(", "))
+    }
+}
+
+@Composable
+fun ShowEmbeddedArt(pictureList: List<PictureObject>?) {
+    if (pictureList.isNullOrEmpty()) return
+
+    val showImage = remember {
+        mutableStateListOf<Boolean>().apply {
+            addAll(
+                List(pictureList.size) { false })
+        }
+    }
+
+    Text(
+        text = "Album Art",
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.primary
+    )
+
+    pictureList.forEachIndexed { index, picture ->
+        ShowLabel("Description", picture.description)
+        ShowLabel("Picture Type", picture.pictureType)
+        ShowLabel("Mime Type", picture.mimeType)
+
+        val (width, height) = remember(picture.data) {
+            val options = BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+                BitmapFactory.decodeByteArray(picture.data, 0, picture.data.size, this)
+            }
+            options.outWidth to options.outHeight
+        }
+
+        ShowLabel("Dimensions", "${width}x${height}")
+        ShowLabel("Data Size", "${picture.data.size} bytes")
+
+        val scope = rememberCoroutineScope()
+        var bitmap: Bitmap? by remember { mutableStateOf(null) }
+
+        Row(
+            Modifier.clickable(
+                onClick = {
+                    if (showImage[index]) {
+                        showImage[index] = false
+                    } else {
+                        scope.launch {
+                            if (bitmap == null) {
+                                bitmap = withContext(Dispatchers.Default) {
+                                    BitmapFactory.decodeByteArray(
+                                        picture.data,
+                                        0,
+                                        picture.data.size
+                                    )
+                                }
+                            }
+                            showImage[index] = true
+                        }
+                    }
+                }
+            )
+        ) {
+            Text(
+                "View Image",
+                color = MaterialTheme.colorScheme.secondary
+            )
+            Icon(
+                imageVector =
+                    if (showImage[index])
+                        Icons.Outlined.ArrowDropUp
+                    else
+                        Icons.Outlined.ArrowDropDown,
+                "show_image"
+            )
+        }
+
+        if (showImage[index]) {
+            AsyncImage(
+                model = bitmap,
+                contentDescription = "album_art",
+                modifier = Modifier
+            )
+        }
     }
 }
 
